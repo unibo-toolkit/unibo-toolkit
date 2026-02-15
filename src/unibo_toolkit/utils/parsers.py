@@ -1,0 +1,332 @@
+"""HTML parsing utilities for UniBo course data."""
+
+import re
+from typing import List, Optional, Tuple
+
+from bs4 import BeautifulSoup, Tag
+
+from unibo_toolkit.enums import AccessType, Area, Campus, CourseType, Language
+from unibo_toolkit.models import AreaInfo, Bachelor, BaseCourse, Master, SingleCycleMaster
+
+
+class CourseParser:
+    """Parser for UniBo course HTML data."""
+
+    BASE_URL = "https://www.unibo.it"
+    CAMPUS_MAP = {
+        "bologna": Campus.BOLOGNA,
+        "cesena": Campus.CESENA,
+        "forli": Campus.FORLI,
+        "forlì": Campus.FORLI,
+        "ravenna": Campus.RAVENNA,
+        "rimini": Campus.RIMINI,
+    }
+    LANGUAGE_MAP = {
+        "italiano": Language.IT,
+        "italian": Language.IT,
+        "inglese": Language.EN,
+        "english": Language.EN,
+        "francese": Language.FR,
+        "french": Language.FR,
+    }
+
+    @staticmethod
+    def parse_areas(html: str, course_type: CourseType) -> List[AreaInfo]:
+        """Parse academic areas from page HTML.
+
+        Args:
+            html: HTML content from main course page
+            course_type: Type of courses on this page
+
+        Returns:
+            List of AreaInfo objects with area and course count
+        """
+        soup = BeautifulSoup(html, "html.parser")
+        buttons = soup.find_all("button", {"data-params": True})
+        areas: List[AreaInfo] = []
+
+        for btn in buttons:
+            params = btn.get("data-params", "")
+            if "schede=" not in params:
+                continue
+
+            # Extract area ID from "schede=N" parameter
+            schede_str = params.split("schede=")[1].split("&")[0]
+            try:
+                schede_id = int(schede_str)
+            except ValueError:
+                continue
+
+            # Get Area enum from ID
+            area = Area.from_id(schede_id)
+            if not area:
+                continue
+
+            # Extract course count
+            number_span = btn.find("span", class_="number")
+            if number_span:
+                try:
+                    count = int(number_span.get_text(strip=True))
+                    areas.append(AreaInfo(area=area, course_count=count, course_type=course_type))
+                except ValueError:
+                    continue
+
+        return areas
+
+    @staticmethod
+    def parse_course_list(
+        html: str,
+        year: int,
+        category: str,
+        area: Optional[Area] = None,
+    ) -> List[BaseCourse]:
+        """Parse HTML response containing course cards.
+
+        Args:
+            html: HTML content from /elenco endpoint
+            year: Academic year
+            category: Course category (lauree-magistrali or lauree-e-lauree-magistrali-a-ciclo-unico)
+            area: Optional area filter
+
+        Returns:
+            List of parsed course objects (Bachelor, Master, or SingleCycleMaster)
+        """
+        soup = BeautifulSoup(html, "html.parser")
+        course_items = soup.find_all("div", class_="item")
+        courses: List[BaseCourse] = []
+
+        for item in course_items:
+            try:
+                course = CourseParser._parse_course_card(item, year, category, area)
+                if course:
+                    courses.append(course)
+            except Exception:
+                # Skip invalid course cards
+                continue
+
+        return courses
+
+    @staticmethod
+    def _parse_course_card(
+        item: Tag,
+        year: int,
+        category: str,
+        area: Optional[Area] = None,
+    ) -> Optional[BaseCourse]:
+        """Parse individual course card element.
+
+        Args:
+            item: BeautifulSoup Tag representing course card
+            year: Academic year
+            category: Course category path
+            area: Optional area this course belongs to
+
+        Returns:
+            Course object (Bachelor/Master/SingleCycleMaster) or None if parsing fails
+        """
+        # Extract course ID and title from h3 element
+        title_elem = item.find("h3")
+        if not title_elem:
+            return None
+
+        course_id_str = title_elem.get("id", "")
+        if not course_id_str or not course_id_str.isdigit():
+            return None
+
+        course_id = int(course_id_str)
+        title = title_elem.get_text(strip=True)
+
+        # Get text wrapper containing course details
+        text_wrapper = item.find("div", class_="text-wrapper")
+        if not text_wrapper:
+            return None
+
+        # Extract all course details
+        campus = CourseParser._extract_campus(text_wrapper)
+        languages = CourseParser._extract_languages(text_wrapper)
+        duration_years = CourseParser._extract_duration(text_wrapper, category)
+        access_type, seats = CourseParser._extract_access_type(text_wrapper)
+
+        # Get course URL
+        link_elem = item.find("a", href=True)
+        url = (
+            link_elem["href"]
+            if link_elem
+            else f"{CourseParser.BASE_URL}/it/studiare/{category}/corso/{year}/{course_id}"
+        )
+
+        # Determine course type based on duration
+        course_type = CourseParser._determine_course_type(duration_years)
+
+        # Build course data dictionary
+        course_data = {
+            "course_id": course_id,
+            "title": title,
+            "course_class": "",  # Not available in HTML TODO
+            "campus": campus,
+            "languages": languages,
+            "duration_years": duration_years,
+            "access_type": access_type,
+            "year": year,
+            "url": url,
+            "area": area,
+            "seats": seats,
+        }
+
+        # Create appropriate course type instance
+        if course_type == CourseType.BACHELOR:
+            return Bachelor(**course_data)
+        elif course_type == CourseType.MASTER:
+            return Master(**course_data)
+        else:
+            return SingleCycleMaster(**course_data)
+
+    @staticmethod
+    def _find_field_value(text_wrapper: Tag, field_name: str) -> str:
+        """Extract field value from text wrapper by searching for field name in span.
+
+        Args:
+            text_wrapper: BeautifulSoup Tag containing course details
+            field_name: Field name to search for (case-insensitive)
+
+        Returns:
+            Field value or empty string if not found
+        """
+        for p in text_wrapper.find_all("p"):
+            span = p.find("span")
+            if span and field_name.lower() in span.get_text(strip=True).lower():
+                # Remove field label and return value
+                full_text = p.get_text(strip=True)
+                # Handle "Label: Value" format
+                if ":" in full_text:
+                    return full_text.split(":", 1)[1].strip()
+                return full_text
+        return ""
+
+    @staticmethod
+    def _extract_campus(text_wrapper: Tag) -> Campus:
+        """Extract campus location from text wrapper.
+
+        Args:
+            text_wrapper: Tag containing course details
+
+        Returns:
+            Campus enum value (defaults to BOLOGNA if not found)
+        """
+        # Try both Italian "Sede didattica" and English "Place of teaching"
+        campus_text = CourseParser._find_field_value(text_wrapper, "sede didattica")
+        if not campus_text:
+            campus_text = CourseParser._find_field_value(text_wrapper, "place of teaching")
+        return CourseParser.CAMPUS_MAP.get(campus_text.lower(), Campus.BOLOGNA)
+
+    @staticmethod
+    def _extract_languages(text_wrapper: Tag) -> List[Language]:
+        """Extract languages of instruction from text wrapper.
+
+        Args:
+            text_wrapper: Tag containing course details
+
+        Returns:
+            List of Language enums (e.g., [Language.IT] or [Language.EN, Language.IT])
+        """
+        # Try both Italian "Lingua" and English "Language"
+        language_text = CourseParser._find_field_value(text_wrapper, "lingua")
+        if not language_text:
+            language_text = CourseParser._find_field_value(text_wrapper, "language")
+
+        if not language_text:
+            return [Language.IT]
+
+        # Split by comma to handle multilingual courses
+        language_parts = [lang.strip().lower() for lang in language_text.split(",")]
+
+        languages = []
+        for lang_key in language_parts:
+            lang = CourseParser.LANGUAGE_MAP.get(lang_key)
+            if lang:
+                languages.append(lang)
+
+        # Fallback to Italian if nothing parsed
+        return languages if languages else [Language.IT]
+
+    @staticmethod
+    def _extract_duration(text_wrapper: Tag, category: str) -> int:
+        """Extract course duration in years from text wrapper.
+
+        Args:
+            text_wrapper: Tag containing course details
+            category: Course category path (used as fallback)
+
+        Returns:
+            Duration in years (2, 3, 5, or 6)
+        """
+        # Try both Italian "Durata" and English "Duration"
+        duration_text = CourseParser._find_field_value(text_wrapper, "durata")
+        if not duration_text:
+            duration_text = CourseParser._find_field_value(text_wrapper, "duration")
+
+        # Try to extract number from "6 anni", "3 years", or just "3"
+        if duration_text:
+            match = re.search(r"(\d+)", duration_text)
+            if match:
+                return int(match.group(1))
+
+        # Fallback to category-based detection
+        # Note: Only use URL pattern if duration is not found in HTML
+        if "magistrali-a-ciclo-unico" in category:
+            return 5  # Italian single-cycle
+        elif "magistrali" in category or "second-cycle" in category:
+            return 2  # Master's
+        # For "first-and-single-cycle" we can't determine from URL alone
+        # (it contains both 3-year bachelor and 5-6 year single-cycle)
+        # Default to 3 years if nothing else matched
+        return 3  # Bachelor's default
+
+    @staticmethod
+    def _extract_access_type(text_wrapper: Tag) -> Tuple[AccessType, Optional[int]]:
+        """Extract access type and number of seats from text wrapper.
+
+        Args:
+            text_wrapper: Tag containing course details
+
+        Returns:
+            Tuple of (AccessType enum, number of seats or None)
+        """
+        # Try both Italian "Tipo di accesso" and English "Type of access"
+        access_text = CourseParser._find_field_value(text_wrapper, "tipo di accesso")
+        if not access_text:
+            access_text = CourseParser._find_field_value(text_wrapper, "type of access")
+
+        access_lower = access_text.lower()
+
+        # Check for open access (IT: "libero", EN: "open access")
+        if "libero" in access_lower or "open access" in access_lower:
+            return AccessType.OPEN, None
+
+        # Check for limited access (IT: "programmato", EN: "restricted access")
+        if "programmato" in access_lower or "restricted" in access_lower:
+            # Extract number from:
+            # IT: "X posti disponibili"
+            # EN: "X places available"
+            seats_match = re.search(r"(\d+)\s*(?:posti|places)", access_text, re.IGNORECASE)
+            seats = int(seats_match.group(1)) if seats_match else None
+            return AccessType.LIMITED, seats
+
+        # Default to open access
+        return AccessType.OPEN, None
+
+    @staticmethod
+    def _determine_course_type(duration: int) -> CourseType:
+        """Determine course type based on duration.
+
+        Args:
+            duration: Course duration in years
+
+        Returns:
+            CourseType enum (BACHELOR, MASTER, or SINGLE_CYCLE_MASTER)
+        """
+        if duration >= 5:
+            return CourseType.SINGLE_CYCLE_MASTER
+        elif duration == 2:
+            return CourseType.MASTER
+        return CourseType.BACHELOR
