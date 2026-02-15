@@ -230,6 +230,11 @@ class CourseScraper:
             For example:
             - Language.IT: course.title = "Tecnologie alimentari"
             - Language.EN: course.title = "Food Technology"
+
+            However, the course_site_url language depends on the course's teaching language,
+            not the language parameter. Italian-taught courses have Italian URLs
+            (/magistrale/, /laurea/), while English-taught courses have English URLs
+            (/2cycle/, /1cycle/). This reflects the actual structure of the UniBo website.
         """
         self._validate_language(language)
         year = await self._get_current_year()
@@ -303,6 +308,11 @@ class CourseScraper:
 
         Raises:
             UnsupportedLanguageError: If language is not IT or EN
+
+        Note:
+            The course_site_url language depends on the course's teaching language,
+            not the language parameter. Italian-taught courses have Italian URLs,
+            while English-taught courses have English URLs.
         """
         self._validate_language(language)
         logger.info(f"Fetching all courses (type={course_type}, area={area}, lang={language.value})")

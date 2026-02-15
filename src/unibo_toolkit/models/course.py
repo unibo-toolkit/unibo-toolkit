@@ -70,6 +70,13 @@ class BaseCourse(ABC):
         If the URL has already been fetched, returns the cached value without making
         an HTTP request.
 
+        **Important Note:**
+        The language of the returned URL depends on the course's teaching language,
+        NOT the language used to fetch the course data. Italian-taught courses will
+        have Italian URLs (/magistrale/, /laurea/), while English-taught courses will
+        have English URLs (/2cycle/, /1cycle/). This is the actual structure of the
+        UniBo website.
+
         Returns:
             The course site URL if found, None otherwise
 
