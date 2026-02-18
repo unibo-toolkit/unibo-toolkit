@@ -1,7 +1,6 @@
 """Course scraper for UniBo website."""
 
-import asyncio
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from bs4 import BeautifulSoup
 
@@ -11,6 +10,9 @@ from unibo_toolkit.exceptions import UnsupportedLanguageError
 from unibo_toolkit.logging import get_logger
 from unibo_toolkit.models import AreaInfo, BaseCourse
 from unibo_toolkit.utils import CourseParser
+
+if TYPE_CHECKING:
+    from unibo_toolkit.models import Curriculum
 
 logger = get_logger(__name__)
 
@@ -40,8 +42,8 @@ class CourseScraper:
             "single_cycle": "study/first-and-single-cycle-degree",
         },
     }
-    DEFAULT_AREA_DELAY = 0.1
-    DEFAULT_COURSE_DELAY = 0.1
+    DEFAULT_AREA_DELAY = 0.0
+    DEFAULT_COURSE_DELAY = 0.0
     SUPPORTED_LANGUAGES = [Language.EN, Language.IT]
 
     def __init__(
@@ -75,7 +77,9 @@ class CourseScraper:
         self.course_delay = course_delay
         self._current_year: Optional[int] = None
         logger.debug(
-            f"CourseScraper initialized with delays: area={area_delay}s, course={course_delay}s"
+            "CourseScraper initialized",
+            area_delay_seconds=area_delay,
+            course_delay_seconds=course_delay
         )
 
     async def __aenter__(self):
@@ -85,11 +89,11 @@ class CourseScraper:
             self._internal_client = HTTPClient()
             await self._internal_client.__aenter__()
             self.http_client = self._internal_client
-            logger.debug("CourseScraper created internal HTTP client")
+            logger.debug("Created internal HTTP client")
         else:
             # Use externally provided client
             self.http_client = self._external_client
-            logger.debug("CourseScraper using external HTTP client")
+            logger.debug("Using external HTTP client")
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -97,7 +101,7 @@ class CourseScraper:
         if self._internal_client is not None:
             # Clean up our internal client
             await self._internal_client.__aexit__(exc_type, exc_val, exc_tb)
-            logger.debug("CourseScraper closed internal HTTP client")
+            logger.debug("Closed internal HTTP client")
         return False
 
     def _validate_language(self, language: Language) -> None:
@@ -126,7 +130,7 @@ class CourseScraper:
         if self._current_year is not None:
             return self._current_year
 
-        logger.debug("Detecting current academic year from website...")
+        logger.debug("Detecting current academic year from website")
 
         try:
             html = await self.http_client.get(f"{self.BASE_URL}/it/studiare/lauree-magistrali")
@@ -135,17 +139,22 @@ class CourseScraper:
 
             if catalog and catalog.get("data-year"):
                 self._current_year = int(catalog["data-year"])
-                logger.info(f"Detected current academic year: {self._current_year}")
+                logger.info("Academic year detected", year=self._current_year)
                 return self._current_year
             else:
                 logger.warning(
-                    "Could not find data-year attribute, falling back to default year 2026"
+                    "Could not find data-year attribute, using fallback",
+                    fallback_year=2026
                 )
                 self._current_year = 2026  # TODO review
                 return self._current_year
 
         except Exception as e:
-            logger.error(f"Failed to detect current year: {e}, using fallback 2026")
+            logger.error(
+                "Failed to detect current year, using fallback",
+                error=str(e),
+                fallback_year=2026
+            )
             self._current_year = 2026
             return self._current_year
 
@@ -167,7 +176,11 @@ class CourseScraper:
             UnsupportedLanguageError: If language is not IT or EN
         """
         self._validate_language(language)
-        logger.info(f"Fetching academic areas (type={course_type}, lang={language.value})")
+        logger.info(
+            "Fetching academic areas",
+            course_type=course_type.value if course_type else "all",
+            language=language.value
+        )
         areas: List[AreaInfo] = []
 
         if course_type == CourseType.MASTER:
@@ -189,19 +202,25 @@ class CourseScraper:
             url = f"{self.BASE_URL}/{language.value}/{category_path}"
 
             try:
-                logger.debug(f"Fetching areas from {url}")
+                logger.debug("Fetching areas from URL", url=url, course_type=ctype.value)
                 html = await self.http_client.get(url)
                 page_areas = self.parser.parse_areas(html, ctype)
                 areas.extend(page_areas)
-                logger.debug(f"Found {len(page_areas)} areas for {ctype.value}")
-
-                await asyncio.sleep(self.area_delay)
+                logger.debug(
+                    "Areas found",
+                    count=len(page_areas),
+                    course_type=ctype.value
+                )
 
             except Exception as e:
-                logger.warning(f"Failed to fetch areas from {url}: {e}")
+                logger.warning(
+                    "Failed to fetch areas from URL",
+                    url=url,
+                    error=str(e)
+                )
                 continue
 
-        logger.info(f"Total areas fetched: {len(areas)}")
+        logger.info("Areas fetched", total_count=len(areas))
         return areas
 
     async def get_courses_by_area(
@@ -239,7 +258,11 @@ class CourseScraper:
         self._validate_language(language)
         year = await self._get_current_year()
 
-        logger.info(f"Fetching courses from area '{area.title_it}' (lang={language.value})")
+        logger.info(
+            "Fetching courses from area",
+            area=area.title_it,
+            language=language.value
+        )
 
         if course_type == CourseType.MASTER:
             categories_to_fetch = ["master"]
@@ -258,16 +281,27 @@ class CourseScraper:
             params = {"schede": str(area.area_id)}
 
             try:
-                logger.debug(f"Fetching from {url}?schede={area.area_id}")
+                logger.debug(
+                    "Fetching courses from URL",
+                    url=url,
+                    area_id=area.area_id,
+                    category=cat_key
+                )
                 html = await self.http_client.get(url, params=params)
                 courses = self.parser.parse_course_list(html, year, category_path, area)
                 all_courses.extend(courses)
-                logger.debug(f"Found {len(courses)} courses in {cat_key}")
-
-                await asyncio.sleep(self.course_delay)
+                logger.debug(
+                    "Courses found",
+                    count=len(courses),
+                    category=cat_key
+                )
 
             except Exception as e:
-                logger.warning(f"Failed to fetch courses from {url}: {e}")
+                logger.warning(
+                    "Failed to fetch courses from URL",
+                    url=url,
+                    error=str(e)
+                )
                 continue
 
         if course_type:
@@ -275,12 +309,18 @@ class CourseScraper:
 
         # Fetch course site URLs if requested
         if with_site_urls:
-            logger.debug(f"Fetching course site URLs for {len(all_courses)} courses...")
+            logger.debug(
+                "Fetching course site URLs",
+                courses_count=len(all_courses)
+            )
             for course in all_courses:
                 await course.fetch_site_url()
-                await asyncio.sleep(self.course_delay)
 
-        logger.info(f"Total courses fetched from {area.title_it}: {len(all_courses)}")
+        logger.info(
+            "Courses fetched from area",
+            area=area.title_it,
+            total_count=len(all_courses)
+        )
         return all_courses
 
     async def get_all_courses(
@@ -315,7 +355,12 @@ class CourseScraper:
             while English-taught courses have English URLs.
         """
         self._validate_language(language)
-        logger.info(f"Fetching all courses (type={course_type}, area={area}, lang={language.value})")
+        logger.info(
+            "Fetching all courses",
+            course_type=course_type.value if course_type else "all",
+            area=area.value if area else "all",
+            language=language.value
+        )
 
         if area:
             return await self.get_courses_by_area(area, course_type, language, with_site_urls)
@@ -344,10 +389,18 @@ class CourseScraper:
                         all_courses.append(course)
 
             except Exception as e:
-                logger.warning(f"Failed to fetch courses from area {area_info.area.title_it}: {e}")
+                logger.warning(
+                    "Failed to fetch courses from area",
+                    area=area_info.area.title_it,
+                    error=str(e)
+                )
                 continue
 
-        logger.info(f"Total courses fetched: {len(all_courses)} (unique by ID)")
+        logger.info(
+            "All courses fetched",
+            total_count=len(all_courses),
+            note="deduplicated by course ID"
+        )
         return all_courses
 
     async def get_course_by_id(
@@ -370,12 +423,16 @@ class CourseScraper:
             UnsupportedLanguageError: If language is not IT or EN
         """
         self._validate_language(language)
-        logger.info(f"Searching for course ID {course_id}")
+        logger.info("Searching for course by ID", course_id=course_id)
         all_courses = await self.get_all_courses(language=language)
 
         for course in all_courses:
             if course.course_id == course_id:
-                logger.info(f"Found course: {course.title}")
+                logger.info(
+                    "Course found",
+                    course_id=course_id,
+                    title=course.title
+                )
 
                 # Populate site URL if requested
                 if with_site_url:
@@ -383,7 +440,7 @@ class CourseScraper:
 
                 return course
 
-        logger.warning(f"Course ID {course_id} not found")
+        logger.warning("Course not found", course_id=course_id)
         return None
 
     async def search_courses(
@@ -412,7 +469,12 @@ class CourseScraper:
             UnsupportedLanguageError: If language is not IT or EN
         """
         self._validate_language(language)
-        logger.info(f"Searching courses: query='{query}', campus={campus}, type={course_type}")
+        logger.info(
+            "Searching courses",
+            query=query,
+            campus=campus.value if campus else "all",
+            course_type=course_type.value if course_type else "all"
+        )
         all_courses = await self.get_all_courses(course_type, area, language, with_site_urls)
 
         query_lower = query.lower()
@@ -428,6 +490,109 @@ class CourseScraper:
 
             results.append(course)
 
-        logger.info(f"Search results: {len(results)} courses found")
+        logger.info("Search completed", results_count=len(results))
         return results
+
+    async def get_available_curricula(self, course_site_url: str) -> List["Curriculum"]:
+        """Fetch available curricula for a course from its timetable page.
+
+        UniBo courses may have multiple curricula (study tracks/specializations).
+        This method fetches the list of available curricula from the @@available_curricula endpoint.
+
+        Args:
+            course_site_url: URL to the course site (e.g., https://corsi.unibo.it/laurea/informatica)
+
+        Returns:
+            List of Curriculum objects. Empty list if no curricula are available.
+
+        Example:
+            >>> async with CourseScraper() as scraper:
+            ...     curricula = await scraper.get_available_curricula(
+            ...         "https://corsi.unibo.it/laurea/informatica"
+            ...     )
+            ...     for curriculum in curricula:
+            ...         print(f"{curriculum.code}: {curriculum.label}")
+            000-000: Generale
+            B69-000: Percorso avanzato
+
+        Note:
+            - Italian courses use '/orario-lezioni' path
+            - English courses use '/timetable' path
+            - The endpoint returns JSON with curriculum data
+        """
+        if not course_site_url:
+            logger.warning("Empty course_site_url provided")
+            return []
+
+        try:
+            # Determine the path based on course URL structure
+            # Italian courses: /laurea/, /magistrale/, /magistralecu/ -> orario-lezioni
+            # English courses: /1cycle/, /2cycle/, /singlecycle/ -> timetable
+            if any(x in course_site_url for x in ["/laurea/", "/magistrale/", "/magistralecu/"]):
+                path = "orario-lezioni"
+            elif any(x in course_site_url for x in ["/1cycle/", "/2cycle/", "/singlecycle/"]):
+                path = "timetable"
+            else:
+                logger.warning(
+                    "Unknown course URL pattern",
+                    course_site_url=course_site_url
+                )
+                return []
+
+            curricula_url = f"{course_site_url}/{path}/@@available_curricula"
+
+            logger.debug(
+                "Fetching available curricula",
+                curricula_url=curricula_url
+            )
+
+            response = await self.http_client.get(curricula_url)
+
+            # Parse JSON response
+            import json
+            data = json.loads(response)
+
+            # Parse response to Curriculum objects
+            # Format: [{"value": "B69-000", "label": "Percorso avanzato", "selected": false}, ...]
+            from unibo_toolkit.models.curriculum import Curriculum
+
+            curricula = []
+            if isinstance(data, list):
+                for item in data:
+                    if isinstance(item, dict) and "value" in item:
+                        value = item.get("value")
+                        label = item.get("label", "")
+                        selected = item.get("selected", False)
+
+                        # Skip None/undefined values
+                        if value is not None and value != "":
+                            curriculum = Curriculum(
+                                code=str(value),
+                                label=str(label),
+                                selected=selected
+                            )
+                            curricula.append(curriculum)
+
+            logger.info(
+                "Curricula fetched successfully",
+                course_site_url=course_site_url,
+                curricula_count=len(curricula)
+            )
+
+            return curricula
+
+        except json.JSONDecodeError as e:
+            logger.warning(
+                "Failed to parse curricula JSON",
+                course_site_url=course_site_url,
+                error=str(e)
+            )
+            return []
+        except Exception as e:
+            logger.warning(
+                "Failed to fetch curricula",
+                course_site_url=course_site_url,
+                error=str(e)
+            )
+            return []
 

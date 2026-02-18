@@ -1,7 +1,9 @@
 """Logging configuration for unibo_toolkit library."""
 
 import logging
-from typing import Optional
+from typing import Any, Optional
+
+from unibo_toolkit.utils.custom_logger import CustomLogger
 
 _LOGGER_NAME = "UNIBO_TOOLKIT"
 _logger_configured = False
@@ -19,7 +21,7 @@ def setup_logging(
 
     Args:
         level: Log level - one of: DEBUG, INFO, WARNING, ERROR, CRITICAL
-        format_string: Custom log format string. If None, uses default format
+        format_string: Custom log format string. If None, uses structured format
         handler: Custom logging handler. If None, uses StreamHandler (console output)
 
     Example:
@@ -50,7 +52,7 @@ def setup_logging(
     if handler is None:
         handler = logging.StreamHandler()
 
-    # Set format
+    # Set format - default to structured format for CustomLogger
     if format_string is None:
         format_string = "[%(levelname)s] %(name)s - %(message)s"
 
@@ -61,22 +63,28 @@ def setup_logging(
     _logger_configured = True
 
 
-def get_logger(name: str) -> logging.Logger:
-    """Get logger instance for a module.
+def get_logger(name: str, **items: Any) -> CustomLogger:
+    """Get custom logger instance for a module.
 
-    This function is used internally by the library to get loggers
-    for different modules.
+    This function returns a CustomLogger that formats messages as
+    structured logs with key-value pairs.
 
     Args:
         name: Module name (usually __name__)
+        **items: Default items to include in all log messages
 
     Returns:
-        Logger instance that respects the library's logging configuration
+        CustomLogger instance
+
+    Example:
+        >>> logger = get_logger(__name__)
+        >>> logger.info("Course fetched", course_id=6796)
+        # Output: msg="Course fetched" course_id="6796"
     """
-    return logging.getLogger(f"{_LOGGER_NAME}.{name}")
+    return CustomLogger(f"{_LOGGER_NAME}.{name}", **items)
 
 
 # Initialize default logger with NullHandler (no output by default)
 _default_logger = logging.getLogger(_LOGGER_NAME)
 _default_logger.addHandler(logging.NullHandler())
-_default_logger.setLevel(logging.WARNING)  # Only show warnings/errors by default
+_default_logger.setLevel(logging.WARNING)

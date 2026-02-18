@@ -116,4 +116,5 @@ dmypy.json
 cython_debug/
 .idea/
 .dev_plan/
+dev_plan/
 tests/
