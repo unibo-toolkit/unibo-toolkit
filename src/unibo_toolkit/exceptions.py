@@ -1,5 +1,7 @@
 """Custom exceptions for UniBo Toolkit."""
 
+from __future__ import annotations
+
 
 class UniboToolkitError(Exception):
     """Base exception for all UniBo Toolkit errors."""
