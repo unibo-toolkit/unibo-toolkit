@@ -26,6 +26,26 @@ jobs:
           python -m pip install --upgrade pip
           pip install 'black[d]>=24.0.0,<26.0.0'
 
-      - name: Run black check
+      - name: Run black formatting
         run: |
-          black --check --diff src/
+          black src/
+
+      - name: Check for changes
+        id: verify_diff
+        run: |
+          git diff --quiet . || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit formatting changes
+        if: steps.verify_diff.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          git commit -m "style: Auto-format code with Black"
+
+      - name: Push changes
+        if: steps.verify_diff.outputs.changed == 'true'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
