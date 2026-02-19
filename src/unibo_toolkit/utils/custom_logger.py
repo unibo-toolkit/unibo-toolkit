@@ -60,9 +60,7 @@ class CustomLogger:
             level: Log level (INFO, DEBUG, etc.)
             items: Additional key-value items
         """
-        log = (
-            'msg="' + message + '"' + (" " + " ".join(map(str, items)) if items else "")
-        )
+        log = 'msg="' + message + '"' + (" " + " ".join(map(str, items)) if items else "")
         self.logger.log(level, log)
 
     @staticmethod
@@ -84,9 +82,7 @@ class CustomLogger:
             message: Log message
             **items: Additional key-value pairs
         """
-        self.__send_message(
-            message, logging.INFO, self.items + self.__transform_items(items).all
-        )
+        self.__send_message(message, logging.INFO, self.items + self.__transform_items(items).all)
 
     def debug(self, message: str, **items: Any) -> None:
         """Log debug message.
@@ -95,9 +91,7 @@ class CustomLogger:
             message: Log message
             **items: Additional key-value pairs
         """
-        self.__send_message(
-            message, logging.DEBUG, self.items + self.__transform_items(items).all
-        )
+        self.__send_message(message, logging.DEBUG, self.items + self.__transform_items(items).all)
 
     def warning(self, message: str, **items: Any) -> None:
         """Log warning message.
@@ -117,9 +111,7 @@ class CustomLogger:
             message: Log message
             **items: Additional key-value pairs
         """
-        self.__send_message(
-            message, logging.ERROR, self.items + self.__transform_items(items).all
-        )
+        self.__send_message(message, logging.ERROR, self.items + self.__transform_items(items).all)
 
     def critical(self, message: str, **items: Any) -> None:
         """Log critical message.

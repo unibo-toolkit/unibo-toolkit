@@ -80,7 +80,7 @@ class CourseScraper:
         logger.debug(
             "CourseScraper initialized",
             area_delay_seconds=area_delay,
-            course_delay_seconds=course_delay
+            course_delay_seconds=course_delay,
         )
 
     async def __aenter__(self):
@@ -144,17 +144,14 @@ class CourseScraper:
                 return self._current_year
             else:
                 logger.warning(
-                    "Could not find data-year attribute, using fallback",
-                    fallback_year=2026
+                    "Could not find data-year attribute, using fallback", fallback_year=2026
                 )
                 self._current_year = 2026  # TODO review
                 return self._current_year
 
         except Exception as e:
             logger.error(
-                "Failed to detect current year, using fallback",
-                error=str(e),
-                fallback_year=2026
+                "Failed to detect current year, using fallback", error=str(e), fallback_year=2026
             )
             self._current_year = 2026
             return self._current_year
@@ -180,7 +177,7 @@ class CourseScraper:
         logger.info(
             "Fetching academic areas",
             course_type=course_type.value if course_type else "all",
-            language=language.value
+            language=language.value,
         )
         areas: List[AreaInfo] = []
 
@@ -207,18 +204,10 @@ class CourseScraper:
                 html = await self.http_client.get(url)
                 page_areas = self.parser.parse_areas(html, ctype)
                 areas.extend(page_areas)
-                logger.debug(
-                    "Areas found",
-                    count=len(page_areas),
-                    course_type=ctype.value
-                )
+                logger.debug("Areas found", count=len(page_areas), course_type=ctype.value)
 
             except Exception as e:
-                logger.warning(
-                    "Failed to fetch areas from URL",
-                    url=url,
-                    error=str(e)
-                )
+                logger.warning("Failed to fetch areas from URL", url=url, error=str(e))
                 continue
 
         logger.info("Areas fetched", total_count=len(areas))
@@ -259,11 +248,7 @@ class CourseScraper:
         self._validate_language(language)
         year = await self._get_current_year()
 
-        logger.info(
-            "Fetching courses from area",
-            area=area.title_it,
-            language=language.value
-        )
+        logger.info("Fetching courses from area", area=area.title_it, language=language.value)
 
         if course_type == CourseType.MASTER:
             categories_to_fetch = ["master"]
@@ -283,26 +268,15 @@ class CourseScraper:
 
             try:
                 logger.debug(
-                    "Fetching courses from URL",
-                    url=url,
-                    area_id=area.area_id,
-                    category=cat_key
+                    "Fetching courses from URL", url=url, area_id=area.area_id, category=cat_key
                 )
                 html = await self.http_client.get(url, params=params)
                 courses = self.parser.parse_course_list(html, year, category_path, area)
                 all_courses.extend(courses)
-                logger.debug(
-                    "Courses found",
-                    count=len(courses),
-                    category=cat_key
-                )
+                logger.debug("Courses found", count=len(courses), category=cat_key)
 
             except Exception as e:
-                logger.warning(
-                    "Failed to fetch courses from URL",
-                    url=url,
-                    error=str(e)
-                )
+                logger.warning("Failed to fetch courses from URL", url=url, error=str(e))
                 continue
 
         if course_type:
@@ -310,18 +284,11 @@ class CourseScraper:
 
         # Fetch course site URLs if requested
         if with_site_urls:
-            logger.debug(
-                "Fetching course site URLs",
-                courses_count=len(all_courses)
-            )
+            logger.debug("Fetching course site URLs", courses_count=len(all_courses))
             for course in all_courses:
                 await course.fetch_site_url()
 
-        logger.info(
-            "Courses fetched from area",
-            area=area.title_it,
-            total_count=len(all_courses)
-        )
+        logger.info("Courses fetched from area", area=area.title_it, total_count=len(all_courses))
         return all_courses
 
     async def get_all_courses(
@@ -360,7 +327,7 @@ class CourseScraper:
             "Fetching all courses",
             course_type=course_type.name if course_type else "all",
             area=area.name if area else "all",
-            language=language.value
+            language=language.value,
         )
 
         if area:
@@ -391,16 +358,12 @@ class CourseScraper:
 
             except Exception as e:
                 logger.warning(
-                    "Failed to fetch courses from area",
-                    area=area_info.area.title_it,
-                    error=str(e)
+                    "Failed to fetch courses from area", area=area_info.area.title_it, error=str(e)
                 )
                 continue
 
         logger.info(
-            "All courses fetched",
-            total_count=len(all_courses),
-            note="deduplicated by course ID"
+            "All courses fetched", total_count=len(all_courses), note="deduplicated by course ID"
         )
         return all_courses
 
@@ -429,11 +392,7 @@ class CourseScraper:
 
         for course in all_courses:
             if course.course_id == course_id:
-                logger.info(
-                    "Course found",
-                    course_id=course_id,
-                    title=course.title
-                )
+                logger.info("Course found", course_id=course_id, title=course.title)
 
                 # Populate site URL if requested
                 if with_site_url:
@@ -474,7 +433,7 @@ class CourseScraper:
             "Searching courses",
             query=query,
             campus=campus.value if campus else "all",
-            course_type=course_type.value if course_type else "all"
+            course_type=course_type.value if course_type else "all",
         )
         all_courses = await self.get_all_courses(course_type, area, language, with_site_urls)
 
@@ -534,18 +493,12 @@ class CourseScraper:
             elif any(x in course_site_url for x in ["/1cycle/", "/2cycle/", "/singlecycle/"]):
                 path = "timetable"
             else:
-                logger.warning(
-                    "Unknown course URL pattern",
-                    course_site_url=course_site_url
-                )
+                logger.warning("Unknown course URL pattern", course_site_url=course_site_url)
                 return []
 
             curricula_url = f"{course_site_url}/{path}/@@available_curricula"
 
-            logger.debug(
-                "Fetching available curricula",
-                curricula_url=curricula_url
-            )
+            logger.debug("Fetching available curricula", curricula_url=curricula_url)
 
             response = await self.http_client.get(curricula_url)
 
@@ -567,32 +520,25 @@ class CourseScraper:
                         # Skip None/undefined values
                         if value is not None and value != "":
                             curriculum = Curriculum(
-                                code=str(value),
-                                label=str(label),
-                                selected=selected
+                                code=str(value), label=str(label), selected=selected
                             )
                             curricula.append(curriculum)
 
             logger.info(
                 "Curricula fetched successfully",
                 course_site_url=course_site_url,
-                curricula_count=len(curricula)
+                curricula_count=len(curricula),
             )
 
             return curricula
 
         except json.JSONDecodeError as e:
             logger.warning(
-                "Failed to parse curricula JSON",
-                course_site_url=course_site_url,
-                error=str(e)
+                "Failed to parse curricula JSON", course_site_url=course_site_url, error=str(e)
             )
             return []
         except Exception as e:
             logger.warning(
-                "Failed to fetch curricula",
-                course_site_url=course_site_url,
-                error=str(e)
+                "Failed to fetch curricula", course_site_url=course_site_url, error=str(e)
             )
             return []
-

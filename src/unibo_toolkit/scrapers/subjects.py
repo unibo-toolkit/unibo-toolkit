@@ -28,7 +28,7 @@ class SubjectsScraper:
     # Timetable page paths (language-dependent)
     TIMETABLE_PAGES = [
         "/orario-lezioni",  # Italian
-        "/timetable",        # English
+        "/timetable",  # English
     ]
 
     def __init__(
@@ -118,19 +118,11 @@ class SubjectsScraper:
         if not course_site_url:
             raise ValueError("course_site_url cannot be empty")
 
-        logger.debug(
-            "Fetching subjects",
-            year=academic_year,
-            course_url=course_site_url
-        )
+        logger.debug("Fetching subjects", year=academic_year, course_url=course_site_url)
 
         # Try both page paths
         for page_path in self.TIMETABLE_PAGES:
-            url = self._build_timetable_page_url(
-                course_site_url,
-                page_path,
-                academic_year
-            )
+            url = self._build_timetable_page_url(course_site_url, page_path, academic_year)
 
             try:
                 logger.debug("Trying page path", page_path=page_path)
@@ -148,7 +140,7 @@ class SubjectsScraper:
                     "Subjects fetched successfully",
                     year=academic_year,
                     subjects_count=len(subjects),
-                    page_path=page_path
+                    page_path=page_path,
                 )
 
                 return subjects
@@ -185,10 +177,7 @@ class SubjectsScraper:
             >>> print(len(subjects_dict[1]))  # Number of Year 1 subjects
             12
         """
-        logger.info(
-            "Fetching subjects for multiple years",
-            years=str(academic_years)
-        )
+        logger.info("Fetching subjects for multiple years", years=str(academic_years))
 
         # Fetch all years concurrently
         tasks = [
@@ -207,16 +196,13 @@ class SubjectsScraper:
             await asyncio.sleep(self.request_delay)
 
         # Build result dictionary
-        result = {
-            year: subjects
-            for year, subjects in zip(academic_years, subjects_lists)
-        }
+        result = {year: subjects for year, subjects in zip(academic_years, subjects_lists)}
 
         total_subjects = sum(len(subs) for subs in result.values())
         logger.info(
             "Subjects collection completed",
             total_subjects=total_subjects,
-            years_count=len(academic_years)
+            years_count=len(academic_years),
         )
 
         return result

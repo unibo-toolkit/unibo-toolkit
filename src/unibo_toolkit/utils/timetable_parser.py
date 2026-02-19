@@ -67,10 +67,7 @@ class TimetableParser:
         # Parse classrooms
         classrooms = []
         if "aule" in event_data and event_data["aule"]:
-            classrooms = [
-                TimetableParser.parse_classroom(aula)
-                for aula in event_data["aule"]
-            ]
+            classrooms = [TimetableParser.parse_classroom(aula) for aula in event_data["aule"]]
 
         # Parse credits (might be string or int)
         credits = None
@@ -124,10 +121,7 @@ class TimetableParser:
             >>> len(events)
             346
         """
-        events = [
-            TimetableParser.parse_event(event_data)
-            for event_data in events_data
-        ]
+        events = [TimetableParser.parse_event(event_data) for event_data in events_data]
 
         # Sort by start time
         events.sort(key=lambda e: e.start)

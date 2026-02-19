@@ -77,10 +77,7 @@ class TimetableEvent:
     def __post_init__(self):
         """Auto-extract group_id if not set."""
         if self.group_id is None and self.cod_sdoppiamento:
-            self.group_id = self.extract_group_id(
-                self.cod_sdoppiamento,
-                self.title
-            )
+            self.group_id = self.extract_group_id(self.cod_sdoppiamento, self.title)
 
     @staticmethod
     def extract_group_id(cod_sdoppiamento: str, title: str = "") -> Optional[str]:
@@ -120,11 +117,11 @@ class TimetableEvent:
             None
         """
         # Method 1: From cod_sdoppiamento (primary, most reliable)
-        if '--' in cod_sdoppiamento:
-            suffix = cod_sdoppiamento.split('--')[-1].strip()
+        if "--" in cod_sdoppiamento:
+            suffix = cod_sdoppiamento.split("--")[-1].strip()
 
             # Validation 1: Not same as module base code
-            module_base = cod_sdoppiamento.split('_')[0]
+            module_base = cod_sdoppiamento.split("_")[0]
             if suffix == module_base:
                 return None
 
@@ -133,7 +130,7 @@ class TimetableEvent:
                 return None
 
             # Validation 3: Contains at least one letter or digit
-            if not re.search(r'[A-Z0-9]', suffix, re.IGNORECASE):
+            if not re.search(r"[A-Z0-9]", suffix, re.IGNORECASE):
                 return None
 
             return suffix
@@ -141,16 +138,16 @@ class TimetableEvent:
         # Method 2: From title (fallback)
         # Try to extract group markers from title
         patterns = [
-            r'\(CL\.([A-Z])\)',  # (CL.A)
-            r'\(([A-Z])\)',      # (A)
-            r'\(G\.([A-Z])\)',   # (G.A)
-            r'\(([A-Z]{2,3})\)', # (AK), (LZ), (BO)
+            r"\(CL\.([A-Z])\)",  # (CL.A)
+            r"\(([A-Z])\)",  # (A)
+            r"\(G\.([A-Z])\)",  # (G.A)
+            r"\(([A-Z]{2,3})\)",  # (AK), (LZ), (BO)
         ]
 
         for pattern in patterns:
             match = re.search(pattern, title)
             if match:
-                return match.group(0).strip('()')
+                return match.group(0).strip("()")
 
         return None
 
@@ -239,9 +236,7 @@ class Timetable:
         Returns:
             Sorted list of unique professor names
         """
-        return sorted(set(
-            e.professor for e in self.events if e.professor
-        ))
+        return sorted(set(e.professor for e in self.events if e.professor))
 
     @property
     def available_groups(self) -> List[str]:
@@ -301,11 +296,7 @@ class Timetable:
         """
         return [e for e in self.events if e.group_id is None]
 
-    def get_events_in_range(
-        self,
-        start: datetime,
-        end: datetime
-    ) -> List[TimetableEvent]:
+    def get_events_in_range(self, start: datetime, end: datetime) -> List[TimetableEvent]:
         """Get events within a specific date range.
 
         Args:
@@ -341,9 +332,9 @@ class Timetable:
                     result[event.group_id] = []
                 result[event.group_id].append(event)
             else:
-                if 'common' not in result:
-                    result['common'] = []
-                result['common'].append(event)
+                if "common" not in result:
+                    result["common"] = []
+                result["common"].append(event)
 
         return result
 
@@ -427,9 +418,7 @@ class TimetableCollection:
         return None
 
     def add_curriculum_timetable(
-        self,
-        year: int,
-        curriculum_timetable: CurriculumTimetable
+        self, year: int, curriculum_timetable: CurriculumTimetable
     ) -> None:
         """Add a curriculum timetable to the collection.
 
@@ -468,9 +457,7 @@ class TimetableCollection:
         return list(curricula_set)
 
     def get_all_events(
-        self,
-        year: Optional[int] = None,
-        curriculum_code: Optional[str] = None
+        self, year: Optional[int] = None, curriculum_code: Optional[str] = None
     ) -> List[TimetableEvent]:
         """Get all events, optionally filtered by year and/or curriculum.
 
@@ -574,13 +561,13 @@ class Subject:
             >>> Subject.parse_group_from_module_id("B1944")
             None
         """
-        if '--' not in module_id:
+        if "--" not in module_id:
             return None
 
-        suffix = module_id.split('--')[-1].strip()
+        suffix = module_id.split("--")[-1].strip()
 
         # Validation: not same as module base code
-        module_base = module_id.split('_')[0]
+        module_base = module_id.split("_")[0]
         if suffix == module_base:
             return None
 
@@ -614,9 +601,9 @@ class Subject:
             '11929'
         """
         # Remove group suffix
-        base = self.module_id.split('--')[0]
+        base = self.module_id.split("--")[0]
         # Remove module number
-        base = base.split('_')[0]
+        base = base.split("_")[0]
         return base
 
     def __str__(self) -> str:

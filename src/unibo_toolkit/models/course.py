@@ -157,9 +157,7 @@ class BaseCourse(ABC):
             000-000: General Track
         """
         if not self.course_site_url:
-            raise ValueError(
-                "course_site_url must be set. Call fetch_site_url() first."
-            )
+            raise ValueError("course_site_url must be set. Call fetch_site_url() first.")
 
         # Return cached value if already fetched
         if self._available_curricula is not None:
@@ -215,9 +213,7 @@ class BaseCourse(ABC):
             >>> await course.fetch_timetable(years=[1, 2], curricula=curricula[:2])
         """
         if not self.course_site_url:
-            raise ValueError(
-                "course_site_url must be set. Call fetch_site_url() first."
-            )
+            raise ValueError("course_site_url must be set. Call fetch_site_url() first.")
 
         # Import here to avoid circular dependency
         from unibo_toolkit.scrapers import TimetableScraper
@@ -275,9 +271,7 @@ class BaseCourse(ABC):
             >>> print(subjects[1])  # List of Year 1 subjects
         """
         if not self.course_site_url:
-            raise ValueError(
-                "course_site_url must be set. Call fetch_site_url() first."
-            )
+            raise ValueError("course_site_url must be set. Call fetch_site_url() first.")
 
         # Import here to avoid circular dependency
         from unibo_toolkit.scrapers import SubjectsScraper
@@ -335,7 +329,9 @@ class BaseCourse(ABC):
             return None
         return self._timetables.get_year(year)
 
-    def get_curriculum_timetable(self, year: int, curriculum_code: str) -> Optional["CurriculumTimetable"]:
+    def get_curriculum_timetable(
+        self, year: int, curriculum_code: str
+    ) -> Optional["CurriculumTimetable"]:
         """Get cached timetable for a specific curriculum in a specific year.
 
         Args:

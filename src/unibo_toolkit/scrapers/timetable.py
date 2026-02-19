@@ -38,7 +38,7 @@ class TimetableScraper:
     # API endpoint patterns (language-dependent)
     TIMETABLE_ENDPOINTS = [
         "/orario-lezioni/@@orario_reale_json",  # Italian courses
-        "/timetable/@@orario_reale_json",        # English courses
+        "/timetable/@@orario_reale_json",  # English courses
     ]
 
     def __init__(
@@ -152,26 +152,19 @@ class TimetableScraper:
             raise ValueError("course_site_url cannot be empty")
 
         # Get date range for API
-        start_date, end_date = get_api_date_range(
-            reference_date,
-            extended=extended_range
-        )
+        start_date, end_date = get_api_date_range(reference_date, extended=extended_range)
 
         logger.debug(
             "Fetching timetable",
             course=course_title,
             year=academic_year,
-            date_range=f"{start_date} to {end_date}"
+            date_range=f"{start_date} to {end_date}",
         )
 
         # Try both endpoints
         for endpoint in self.TIMETABLE_ENDPOINTS:
             url = self._build_timetable_url(
-                course_site_url,
-                endpoint,
-                academic_year,
-                start_date,
-                end_date
+                course_site_url, endpoint, academic_year, start_date, end_date
             )
 
             try:
@@ -191,7 +184,7 @@ class TimetableScraper:
                     course=course_title,
                     year=academic_year,
                     events_count=len(events),
-                    endpoint=endpoint
+                    endpoint=endpoint,
                 )
 
                 return Timetable(
@@ -211,11 +204,7 @@ class TimetableScraper:
                 continue
 
         # All endpoints failed
-        logger.warning(
-            "No timetable found",
-            course=course_title,
-            year=academic_year
-        )
+        logger.warning("No timetable found", course=course_title, year=academic_year)
         return Timetable(
             course_id=course_id,
             course_title=course_title,
@@ -255,16 +244,13 @@ class TimetableScraper:
             raise ValueError("course_site_url cannot be empty")
 
         # Get date range for API
-        start_date, end_date = get_api_date_range(
-            reference_date,
-            extended=extended_range
-        )
+        start_date, end_date = get_api_date_range(reference_date, extended=extended_range)
 
         logger.debug(
             "Fetching curriculum timetable",
             curriculum=curriculum.code,
             year=academic_year,
-            date_range=f"{start_date} to {end_date}"
+            date_range=f"{start_date} to {end_date}",
         )
 
         # Try both endpoints
@@ -275,7 +261,7 @@ class TimetableScraper:
                 academic_year,
                 start_date,
                 end_date,
-                curriculum=curriculum
+                curriculum=curriculum,
             )
 
             try:
@@ -295,7 +281,7 @@ class TimetableScraper:
                     curriculum=curriculum.code,
                     year=academic_year,
                     events_count=len(events),
-                    endpoint=endpoint
+                    endpoint=endpoint,
                 )
 
                 return CurriculumTimetable(
@@ -309,9 +295,7 @@ class TimetableScraper:
 
         # All endpoints failed - return empty timetable
         logger.warning(
-            "No timetable found for curriculum",
-            curriculum=curriculum.code,
-            year=academic_year
+            "No timetable found for curriculum", curriculum=curriculum.code, year=academic_year
         )
         return CurriculumTimetable(
             curriculum=curriculum,
@@ -357,7 +341,7 @@ class TimetableScraper:
         logger.info(
             "Fetching timetables for multiple years and curricula",
             curricula_count=len(curricula),
-            years=str(academic_years)
+            years=str(academic_years),
         )
 
         # Create all fetch tasks (year x curriculum combinations)
@@ -387,7 +371,7 @@ class TimetableScraper:
             "Timetables collection completed",
             total_events=total_events,
             years_count=len(academic_years),
-            curricula_count=len(curricula)
+            curricula_count=len(curricula),
         )
 
         return collection

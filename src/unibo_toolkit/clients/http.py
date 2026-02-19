@@ -13,7 +13,7 @@ class HTTPClient:
 
     DEFAULT_HEADERS = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                      "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7",
     }
@@ -47,12 +47,7 @@ class HTTPClient:
             await self._session.close()
             self._session = None
 
-    async def get(
-        self,
-        url: str,
-        params: Optional[Dict[str, Any]] = None,
-        **kwargs
-    ) -> str:
+    async def get(self, url: str, params: Optional[Dict[str, Any]] = None, **kwargs) -> str:
         """Perform GET request and return response text.
 
         Args:
@@ -74,11 +69,7 @@ class HTTPClient:
             return await response.text()
 
     async def post(
-        self,
-        url: str,
-        data: Optional[Any] = None,
-        json: Optional[Dict[str, Any]] = None,
-        **kwargs
+        self, url: str, data: Optional[Any] = None, json: Optional[Dict[str, Any]] = None, **kwargs
     ) -> str:
         """Perform POST request and return response text.
 

@@ -79,18 +79,12 @@ def filter_events(
     # Filter by subject
     if subject is not None:
         subject_lower = subject.lower()
-        filtered = [
-            e for e in filtered
-            if subject_lower in e.title.lower()
-        ]
+        filtered = [e for e in filtered if subject_lower in e.title.lower()]
 
     # Filter by professor
     if professor is not None:
         professor_lower = professor.lower()
-        filtered = [
-            e for e in filtered
-            if e.professor and professor_lower in e.professor.lower()
-        ]
+        filtered = [e for e in filtered if e.professor and professor_lower in e.professor.lower()]
 
     # Filter by date range
     if start_date is not None:
@@ -109,9 +103,7 @@ def filter_events(
     return filtered
 
 
-def group_events_by_group(
-    events: List[TimetableEvent]
-) -> Dict[str, List[TimetableEvent]]:
+def group_events_by_group(events: List[TimetableEvent]) -> Dict[str, List[TimetableEvent]]:
     """Group events by group ID.
 
     Args:
@@ -139,7 +131,7 @@ def group_events_by_group(
     grouped: Dict[str, List[TimetableEvent]] = {}
 
     for event in events:
-        key = event.group_id if event.group_id else 'common'
+        key = event.group_id if event.group_id else "common"
 
         if key not in grouped:
             grouped[key] = []
@@ -180,9 +172,7 @@ def get_unique_professors(events: List[TimetableEvent]) -> List[str]:
         >>> print(professors)
         ['Mario Rossi', 'Luigi Bianchi']
     """
-    return sorted(set(
-        e.professor for e in events if e.professor
-    ))
+    return sorted(set(e.professor for e in events if e.professor))
 
 
 def get_unique_groups(events: List[TimetableEvent]) -> List[str]:

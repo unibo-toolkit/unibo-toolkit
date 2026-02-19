@@ -5,8 +5,7 @@ from typing import Tuple
 
 
 def get_academic_year_range(
-    reference_date: datetime | None = None,
-    extended: bool = False
+    reference_date: datetime | None = None, extended: bool = False
 ) -> Tuple[datetime, datetime]:
     """Calculate academic year date range.
 
@@ -82,8 +81,7 @@ def format_date_for_api(date: datetime) -> str:
 
 
 def get_api_date_range(
-    reference_date: datetime | None = None,
-    extended: bool = True
+    reference_date: datetime | None = None, extended: bool = True
 ) -> Tuple[str, str]:
     """Get date range for timetable API request.
 
@@ -122,11 +120,11 @@ def parse_api_datetime(date_str: str) -> datetime:
     """
     # Try parsing with timezone first
     try:
-        if '+' in date_str:
-            date_str = date_str.split('+')[0]
-        elif date_str.endswith('Z'):
+        if "+" in date_str:
+            date_str = date_str.split("+")[0]
+        elif date_str.endswith("Z"):
             date_str = date_str[:-1]
-        elif len(date_str) > 19 and date_str[19] == '-':
+        elif len(date_str) > 19 and date_str[19] == "-":
             # Negative UTC offset: "2026-02-15T10:00:00-05:00"
             date_str = date_str[:19]
 

@@ -60,11 +60,7 @@ class SubjectsParser:
         return subjects
 
     @staticmethod
-    def _parse_subject_value(
-        value: str,
-        title: str,
-        academic_year: int
-    ) -> Subject | None:
+    def _parse_subject_value(value: str, title: str, academic_year: int) -> Subject | None:
         """Parse subject from checkbox value.
 
         Args:
