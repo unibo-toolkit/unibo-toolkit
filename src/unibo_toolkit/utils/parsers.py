@@ -6,7 +6,10 @@ from typing import List, Optional, Tuple
 from bs4 import BeautifulSoup, Tag
 
 from unibo_toolkit.enums import AccessType, Area, Campus, CourseType, Language
+from unibo_toolkit.utils.custom_logger import get_logger
 from unibo_toolkit.models import AreaInfo, Bachelor, BaseCourse, Master, SingleCycleMaster
+
+logger = get_logger(__name__)
 
 
 class CourseParser:
@@ -100,8 +103,8 @@ class CourseParser:
                 course = CourseParser._parse_course_card(item, year, category, area)
                 if course:
                     courses.append(course)
-            except Exception:
-                # Skip invalid course cards
+            except Exception as e:
+                logger.warning("Failed to parse course card", error=str(e))
                 continue
 
         return courses

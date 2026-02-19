@@ -82,14 +82,12 @@ def format_date_for_api(date: datetime) -> str:
 
 
 def get_api_date_range(
-    academic_year: int,
     reference_date: datetime | None = None,
     extended: bool = True
 ) -> Tuple[str, str]:
     """Get date range for timetable API request.
 
     Args:
-        academic_year: Year of study (1, 2, 3, etc.)
         reference_date: Reference date (default: today)
         extended: Use extended range (±1 year)
 
@@ -97,7 +95,7 @@ def get_api_date_range(
         Tuple of (start_date_str, end_date_str) in YYYY-MM-DD format
 
     Example:
-        >>> get_api_date_range(1, datetime(2026, 2, 15))
+        >>> get_api_date_range(datetime(2026, 2, 15))
         ('2024-09-01', '2027-07-31')
     """
     start_date, end_date = get_academic_year_range(reference_date, extended)
@@ -124,11 +122,13 @@ def parse_api_datetime(date_str: str) -> datetime:
     """
     # Try parsing with timezone first
     try:
-        # Remove timezone info for simplicity (we don't need it for timetables)
         if '+' in date_str:
             date_str = date_str.split('+')[0]
         elif date_str.endswith('Z'):
             date_str = date_str[:-1]
+        elif len(date_str) > 19 and date_str[19] == '-':
+            # Negative UTC offset: "2026-02-15T10:00:00-05:00"
+            date_str = date_str[:19]
 
         return datetime.fromisoformat(date_str)
     except ValueError:

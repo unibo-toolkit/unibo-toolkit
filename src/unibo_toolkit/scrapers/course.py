@@ -1,5 +1,6 @@
 """Course scraper for UniBo website."""
 
+import json
 from typing import TYPE_CHECKING, List, Optional
 
 from bs4 import BeautifulSoup
@@ -271,7 +272,7 @@ class CourseScraper:
         elif course_type == CourseType.SINGLE_CYCLE_MASTER:
             categories_to_fetch = ["single_cycle"]
         else:
-            categories_to_fetch = ["master", "bachelor"]
+            categories_to_fetch = ["master", "bachelor", "single_cycle"]
 
         all_courses: List[BaseCourse] = []
 
@@ -357,8 +358,8 @@ class CourseScraper:
         self._validate_language(language)
         logger.info(
             "Fetching all courses",
-            course_type=course_type.value if course_type else "all",
-            area=area.value if area else "all",
+            course_type=course_type.name if course_type else "all",
+            area=area.name if area else "all",
             language=language.value
         )
 
@@ -549,7 +550,6 @@ class CourseScraper:
             response = await self.http_client.get(curricula_url)
 
             # Parse JSON response
-            import json
             data = json.loads(response)
 
             # Parse response to Curriculum objects

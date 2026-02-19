@@ -1,6 +1,7 @@
 """Timetable scraper for UniBo course timetables."""
 
 import asyncio
+import json
 from datetime import datetime
 from typing import List, Optional
 
@@ -152,7 +153,6 @@ class TimetableScraper:
 
         # Get date range for API
         start_date, end_date = get_api_date_range(
-            academic_year,
             reference_date,
             extended=extended_range
         )
@@ -176,7 +176,7 @@ class TimetableScraper:
 
             try:
                 logger.debug("Trying endpoint", endpoint=endpoint)
-                json_data = await self.http_client.get_json(url)
+                json_data = json.loads(await self.http_client.get(url))
 
                 # Validate response
                 if not self.parser.validate_response(json_data):
@@ -207,7 +207,7 @@ class TimetableScraper:
                 )
 
             except Exception as e:
-                logger.debug("Endpoint failed", endpoint=endpoint, error=str(e))
+                logger.warning("Endpoint failed", endpoint=endpoint, error=str(e))
                 continue
 
         # All endpoints failed
@@ -256,7 +256,6 @@ class TimetableScraper:
 
         # Get date range for API
         start_date, end_date = get_api_date_range(
-            academic_year,
             reference_date,
             extended=extended_range
         )
@@ -281,7 +280,7 @@ class TimetableScraper:
 
             try:
                 logger.debug("Trying endpoint", endpoint=endpoint)
-                json_data = await self.http_client.get_json(url)
+                json_data = json.loads(await self.http_client.get(url))
 
                 # Validate response
                 if not self.parser.validate_response(json_data):
@@ -305,7 +304,7 @@ class TimetableScraper:
                 )
 
             except Exception as e:
-                logger.debug("Endpoint failed", endpoint=endpoint, error=str(e))
+                logger.warning("Endpoint failed", endpoint=endpoint, error=str(e))
                 continue
 
         # All endpoints failed - return empty timetable

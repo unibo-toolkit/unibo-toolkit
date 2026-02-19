@@ -1,11 +1,13 @@
 """Parser for extracting subjects from UniBo timetable HTML pages."""
 
-import re
 from typing import List
 
 from bs4 import BeautifulSoup
 
+from unibo_toolkit.utils.custom_logger import get_logger
 from unibo_toolkit.models import Subject
+
+logger = get_logger(__name__)
 
 
 class SubjectsParser:
@@ -103,7 +105,8 @@ class SubjectsParser:
                 academic_year=academic_year,
             )
 
-        except Exception:
+        except Exception as e:
+            logger.warning("Failed to parse subject value", value=value, error=str(e))
             return None
 
     @staticmethod

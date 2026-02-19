@@ -5,6 +5,9 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 from unibo_toolkit.enums import AccessType, Area, Campus, CourseType, Language
+from unibo_toolkit.utils.custom_logger import get_logger
+
+logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from unibo_toolkit.models.curriculum import Curriculum
@@ -125,8 +128,8 @@ class BaseCourse(ABC):
 
             return None
 
-        except Exception:
-            # Silently fail - URL just won't be available
+        except Exception as e:
+            logger.warning("Failed to fetch course site URL", url=self.url, error=str(e))
             return None
 
     async def fetch_available_curricula(self) -> List["Curriculum"]:
@@ -313,14 +316,13 @@ class BaseCourse(ABC):
         """
         return self._available_curricula
 
-    def get_timetable(self, year: int, curriculum_code: Optional[str] = None) -> Optional["AcademicYearTimetable"]:
+    def get_timetable(self, year: int) -> Optional["AcademicYearTimetable"]:
         """Get cached timetable for specific year.
 
         Returns None if not fetched yet.
 
         Args:
             year: Academic year (1, 2, 3, etc.)
-            curriculum_code: Optional curriculum code to filter by (deprecated - use get_curriculum_timetable)
 
         Returns:
             AcademicYearTimetable for the specified year or None

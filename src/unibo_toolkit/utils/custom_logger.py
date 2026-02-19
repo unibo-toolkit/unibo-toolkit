@@ -39,8 +39,6 @@ class CustomLogger:
         # Output: msg="Course fetched" course_id="6796" title="AI"
     """
 
-    items: List[LogItem] = []
-
     def __init__(self, name: str, **items: Any):
         """Initialize custom logger.
 
@@ -50,7 +48,8 @@ class CustomLogger:
         """
         self.name = name
         self.logger = logging.getLogger(name)
-        if items.items():
+        self.items: List[LogItem] = []
+        if items:
             self.items = self.__transform_items(items).all
 
     def __send_message(self, message: str, level: int, items: List[LogItem]) -> None:
@@ -141,15 +140,9 @@ class CustomLogger:
         """
         self.items.extend(self.__transform_items(items).all)
 
-    @classmethod
-    def clear(cls) -> None:
+    def clear(self) -> None:
         """Clear all default items."""
-        cls.items.clear()
-
-    def __del__(self):
-        """Cleanup on deletion."""
-        if self.items:
-            del self.items
+        self.items.clear()
 
 
 def get_logger(name: str, **items: Any) -> CustomLogger:
