@@ -26,13 +26,34 @@ class TimetableParser:
                 "des_indirizzo": "Via Zamboni 33, Bologna",
                 "des_piano": "Piano Terra",
                 "des_edificio": "Palazzo Poggi",
-                "id_aula": "12345"
+                "raw": {
+                    "edificio": {
+                        "geo": {
+                            "lat": 44.487384,
+                            "lng": 11.328036
+                        }
+                    }
+                }
             }
         """
+        # Extract coordinates from edificio.geo if available
+        latitude = None
+        longitude = None
+
+        raw_data = aula_data.get("raw", {})
+        if raw_data:
+            edificio = raw_data.get("edificio", {})
+            geo = edificio.get("geo", {})
+            if geo:
+                latitude = geo.get("lat")
+                longitude = geo.get("lng")
+
         return Classroom(
             title=aula_data.get("des_risorsa", ""),
             address=aula_data.get("des_indirizzo"),
             additional_info=aula_data.get("des_piano"),
+            latitude=latitude,
+            longitude=longitude,
         )
 
     @staticmethod

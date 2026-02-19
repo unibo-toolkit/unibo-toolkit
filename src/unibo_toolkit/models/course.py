@@ -29,7 +29,6 @@ class BaseCourse(ABC):
     Attributes:
         course_id: Unique course identifier
         title: Course title (name does not change based on site language)
-        course_class: MIUR classification code (e.g., L-13, LM-6)
         campus: Campus location
         languages: Languages of instruction (IT, EN, FR)
         duration_years: Course duration in years
@@ -38,13 +37,11 @@ class BaseCourse(ABC):
         url: Full URL to course information page
         area: Academic area/field
         seats: Number of available seats (for limited access)
-        director: Course director name
         course_site_url: URL to detailed course site (corsi.unibo.it)
     """
 
     course_id: int
     title: str
-    course_class: str
     campus: Campus
     languages: List[Language]
     duration_years: int
@@ -53,7 +50,6 @@ class BaseCourse(ABC):
     url: str
     area: Optional[Area] = None
     seats: Optional[int] = None
-    director: Optional[str] = None
     course_site_url: Optional[str] = None
 
     # Timetable and subjects data (lazy-loaded)

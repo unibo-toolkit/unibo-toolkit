@@ -118,7 +118,6 @@ def test_models():
     bachelor = Bachelor(
         course_id=12345,
         title="Test Course",
-        course_class="L-31",
         campus=Campus.BOLOGNA,
         languages=[Language.EN],
         duration_years=3,

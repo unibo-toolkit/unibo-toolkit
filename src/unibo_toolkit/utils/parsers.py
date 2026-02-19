@@ -165,7 +165,6 @@ class CourseParser:
         course_data = {
             "course_id": course_id,
             "title": title,
-            "course_class": "",  # Not available in HTML TODO
             "campus": campus,
             "languages": languages,
             "duration_years": duration_years,
