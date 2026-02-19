@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 
 from bs4 import BeautifulSoup
 
@@ -62,7 +62,7 @@ class SubjectsParser:
         return subjects
 
     @staticmethod
-    def _parse_subject_value(value: str, title: str, academic_year: int) -> Subject | None:
+    def _parse_subject_value(value: str, title: str, academic_year: int) -> Optional[Subject]:
         """Parse subject from checkbox value.
 
         Args:
@@ -108,7 +108,7 @@ class SubjectsParser:
             return None
 
     @staticmethod
-    def _extract_subject_code(left_part: str) -> str | None:
+    def _extract_subject_code(left_part: str) -> Optional[str]:
         """Extract subject code from left part of value.
 
         Args:

@@ -1,7 +1,7 @@
 """Subjects scraper for UniBo course subjects."""
 
 import asyncio
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from unibo_toolkit.clients import HTTPClient
 from unibo_toolkit.logging import get_logger
@@ -73,8 +73,8 @@ class SubjectsScraper:
         course_site_url: str,
         page_path: str,
         academic_year: int,
-    ) -> str:
-        """Build timetable HTML page URL.
+    ) -> Tuple[str, Dict]:
+        """Build timetable HTML page URL and query parameters.
 
         Args:
             course_site_url: Base course URL
@@ -82,19 +82,23 @@ class SubjectsScraper:
             academic_year: Academic year (1, 2, 3, etc.)
 
         Returns:
-            Complete page URL
+            Tuple of (base_url, params_dict) for use with HTTPClient.get()
 
         Example:
-            >>> url = scraper._build_timetable_page_url(
+            >>> url, params = scraper._build_timetable_page_url(
             ...     "https://corsi.unibo.it/magistrale/AI",
             ...     "/timetable",
             ...     1
             ... )
             >>> print(url)
-            https://corsi.unibo.it/magistrale/AI/timetable?anno=1
+            https://corsi.unibo.it/magistrale/AI/timetable
+            >>> print(params)
+            {'anno': 1}
         """
         base = course_site_url.rstrip("/")
-        return f"{base}{page_path}?anno={academic_year}"
+        base_url = f"{base}{page_path}"
+        params = {"anno": academic_year}
+        return base_url, params
 
     async def fetch_subjects(
         self,
@@ -122,11 +126,11 @@ class SubjectsScraper:
 
         # Try both page paths
         for page_path in self.TIMETABLE_PAGES:
-            url = self._build_timetable_page_url(course_site_url, page_path, academic_year)
+            url, params = self._build_timetable_page_url(course_site_url, page_path, academic_year)
 
             try:
                 logger.debug("Trying page path", page_path=page_path)
-                html = await self.http_client.get(url)
+                html = await self.http_client.get(url, params=params)
 
                 # Check if page has subjects
                 if not self.parser.has_subjects(html):

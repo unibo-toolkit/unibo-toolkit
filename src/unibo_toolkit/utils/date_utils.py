@@ -3,19 +3,15 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Tuple
+from typing import Tuple, Optional
 
 
 def get_academic_year_range(
-    reference_date: datetime | None = None, extended: bool = False
+    reference_date: Optional[datetime] = None, extended: bool = False
 ) -> Tuple[datetime, datetime]:
     """Calculate academic year date range.
 
     UniBo academic year runs from September to July (with January exam period).
-
-    **IMPORTANT BUG FIX**: Correctly handles dates before September.
-    If current date is April 2026, we're still in academic year 2025/2026,
-    NOT 2026/2027!
 
     Args:
         reference_date: Reference date (default: today)
@@ -83,7 +79,7 @@ def format_date_for_api(date: datetime) -> str:
 
 
 def get_api_date_range(
-    reference_date: datetime | None = None, extended: bool = True
+    reference_date: Optional[datetime] = None, extended: bool = True
 ) -> Tuple[str, str]:
     """Get date range for timetable API request.
 

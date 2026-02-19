@@ -1,9 +1,11 @@
 """Timetable scraper for UniBo course timetables."""
 
+from __future__ import annotations
+
 import asyncio
 import json
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from unibo_toolkit.clients import HTTPClient
 from unibo_toolkit.logging import get_logger
@@ -86,8 +88,8 @@ class TimetableScraper:
         start_date: str,
         end_date: str,
         curriculum: Optional[Curriculum] = None,
-    ) -> str:
-        """Build timetable API URL.
+    ) -> Tuple[str, Dict]:
+        """Build timetable API URL and query parameters.
 
         Args:
             course_site_url: Base course URL
@@ -98,10 +100,10 @@ class TimetableScraper:
             curriculum: Optional curriculum to filter by
 
         Returns:
-            Complete API URL
+            Tuple of (base_url, params_dict) for use with HTTPClient.get()
 
         Example:
-            >>> url = scraper._build_timetable_url(
+            >>> url, params = scraper._build_timetable_url(
             ...     "https://corsi.unibo.it/magistrale/ComputerScience",
             ...     "/timetable/@@orario_reale_json",
             ...     1,
@@ -109,17 +111,21 @@ class TimetableScraper:
             ...     "2027-07-31"
             ... )
             >>> print(url)
-            https://corsi.unibo.it/magistrale/ComputerScience/timetable/@@orario_reale_json?anno=1&curricula=&start=2024-09-01&end=2027-07-31
+            https://corsi.unibo.it/magistrale/ComputerScience/timetable/@@orario_reale_json
+            >>> print(params)
+            {'anno': 1, 'curricula': '', 'start': '2024-09-01', 'end': '2027-07-31'}
         """
         base = course_site_url.rstrip("/")
-        curricula_param = curriculum.code if curriculum else ""
-        return (
-            f"{base}{endpoint}"
-            f"?anno={academic_year}"
-            f"&curricula={curricula_param}"
-            f"&start={start_date}"
-            f"&end={end_date}"
-        )
+        base_url = f"{base}{endpoint}"
+
+        params = {
+            "anno": academic_year,
+            "curricula": curriculum.code if curriculum else "",
+            "start": start_date,
+            "end": end_date,
+        }
+
+        return base_url, params
 
     async def fetch_timetable(
         self,
@@ -163,13 +169,13 @@ class TimetableScraper:
 
         # Try both endpoints
         for endpoint in self.TIMETABLE_ENDPOINTS:
-            url = self._build_timetable_url(
+            url, params = self._build_timetable_url(
                 course_site_url, endpoint, academic_year, start_date, end_date
             )
 
             try:
                 logger.debug("Trying endpoint", endpoint=endpoint)
-                json_data = json.loads(await self.http_client.get(url))
+                json_data = json.loads(await self.http_client.get(url, params=params))
 
                 # Validate response
                 if not self.parser.validate_response(json_data):
@@ -255,7 +261,7 @@ class TimetableScraper:
 
         # Try both endpoints
         for endpoint in self.TIMETABLE_ENDPOINTS:
-            url = self._build_timetable_url(
+            url, params = self._build_timetable_url(
                 course_site_url,
                 endpoint,
                 academic_year,
@@ -266,7 +272,7 @@ class TimetableScraper:
 
             try:
                 logger.debug("Trying endpoint", endpoint=endpoint)
-                json_data = json.loads(await self.http_client.get(url))
+                json_data = json.loads(await self.http_client.get(url, params=params))
 
                 # Validate response
                 if not self.parser.validate_response(json_data):

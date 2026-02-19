@@ -2,7 +2,6 @@
 """Smoke test to verify basic package functionality across Python versions."""
 
 import sys
-from datetime import datetime
 
 
 def test_imports():

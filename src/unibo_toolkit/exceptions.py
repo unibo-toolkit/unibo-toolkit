@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import List
+
 
 class UniboToolkitError(Exception):
     """Base exception for all UniBo Toolkit errors."""
@@ -20,7 +22,7 @@ class UnsupportedLanguageError(UniboToolkitError):
         supported_languages: List of supported language codes
     """
 
-    def __init__(self, language: str, supported_languages: list[str] = None):
+    def __init__(self, language: str, supported_languages: List[str] = None):
         """Initialize the exception.
 
         Args:
