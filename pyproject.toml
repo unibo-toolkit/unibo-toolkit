@@ -46,7 +46,7 @@ extend-exclude = '''
 '''
 
 [tool.poetry]
-package-mode = false
+packages = [{include = "unibo_toolkit", from = "src"}]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
