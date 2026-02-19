@@ -14,7 +14,7 @@ def test_imports():
 
     # Verify version exists
     assert hasattr(unibo_toolkit, "__version__")
-    print(f"  ✓ Package version: {unibo_toolkit.__version__}")
+    print(f"  [OK] Package version: {unibo_toolkit.__version__}")
 
     # Test all public imports
     from unibo_toolkit import (
@@ -33,7 +33,7 @@ def test_imports():
         setup_logging,
     )
 
-    print("  ✓ All public imports successful")
+    print("  [OK] All public imports successful")
 
     # Test exception imports
     from unibo_toolkit.exceptions import (
@@ -44,12 +44,12 @@ def test_imports():
         UnsupportedLanguageError,
     )
 
-    print("  ✓ Exception imports successful")
+    print("  [OK] Exception imports successful")
 
     # Test model imports
     from unibo_toolkit.models import Curriculum
 
-    print("  ✓ Model imports successful")
+    print("  [OK] Model imports successful")
 
     return True
 
@@ -64,29 +64,29 @@ def test_enums():
     assert hasattr(Area, "SCIENZE")
     assert hasattr(Area, "INGEGNERIA_ARCHITETTURA")
     assert Area.SCIENZE.area_id == 9
-    print("  ✓ Area enum works")
+    print("  [OK] Area enum works")
 
     # Test Language enum
     assert hasattr(Language, "IT")
     assert hasattr(Language, "EN")
     assert hasattr(Language, "FR")
-    print("  ✓ Language enum works")
+    print("  [OK] Language enum works")
 
     # Test CourseType enum
     assert hasattr(CourseType, "BACHELOR")
     assert hasattr(CourseType, "MASTER")
     assert hasattr(CourseType, "SINGLE_CYCLE_MASTER")
-    print("  ✓ CourseType enum works")
+    print("  [OK] CourseType enum works")
 
     # Test Campus enum
     assert hasattr(Campus, "BOLOGNA")
     assert Campus.BOLOGNA.value == "bologna"
-    print("  ✓ Campus enum works")
+    print("  [OK] Campus enum works")
 
     # Test AccessType enum
     assert hasattr(AccessType, "OPEN")
     assert hasattr(AccessType, "LIMITED")
-    print("  ✓ AccessType enum works")
+    print("  [OK] AccessType enum works")
 
     return True
 
@@ -113,7 +113,7 @@ def test_models():
     )
     assert area_info.area == Area.SCIENZE
     assert area_info.course_count == 10
-    print("  ✓ AreaInfo model created")
+    print("  [OK] AreaInfo model created")
 
     # Test Bachelor creation
     bachelor = Bachelor(
@@ -130,13 +130,13 @@ def test_models():
     assert bachelor.course_id == 12345
     assert bachelor.title == "Test Course"
     assert bachelor.get_course_type() == CourseType.BACHELOR
-    print("  ✓ Bachelor model created")
+    print("  [OK] Bachelor model created")
 
     # Test that Bachelor inherits from BaseCourse
     from unibo_toolkit.models import BaseCourse
 
     assert isinstance(bachelor, BaseCourse)
-    print("  ✓ Model inheritance works")
+    print("  [OK] Model inheritance works")
 
     return True
 
@@ -156,7 +156,7 @@ def test_curriculum():
     assert curriculum.code == "000-000"
     assert curriculum.label == "General Track"
     assert curriculum.selected is True
-    print("  ✓ Curriculum model created")
+    print("  [OK] Curriculum model created")
 
     return True
 
@@ -170,7 +170,7 @@ def test_http_client():
     # Create client (but don't make actual requests)
     client = HTTPClient()
     assert client is not None
-    print("  ✓ HTTPClient created")
+    print("  [OK] HTTPClient created")
 
     return True
 
@@ -184,12 +184,12 @@ def test_scrapers():
     # Test CourseScraper instantiation
     scraper = CourseScraper()
     assert scraper is not None
-    print("  ✓ CourseScraper created")
+    print("  [OK] CourseScraper created")
 
     # Test other scrapers can be imported
     from unibo_toolkit.scrapers import SubjectsScraper, TimetableScraper
 
-    print("  ✓ All scrapers imported")
+    print("  [OK] All scrapers imported")
 
     return True
 
@@ -201,17 +201,17 @@ def test_utilities():
     # Test parsers
     from unibo_toolkit.utils import parsers, subjects_parser, timetable_parser
 
-    print("  ✓ Parser utilities imported")
+    print("  [OK] Parser utilities imported")
 
     # Test date utils
     from unibo_toolkit.utils import date_utils
 
-    print("  ✓ Date utilities imported")
+    print("  [OK] Date utilities imported")
 
     # Test timetable filters
     from unibo_toolkit.utils import timetable_filters
 
-    print("  ✓ Timetable filters imported")
+    print("  [OK] Timetable filters imported")
 
     return True
 
@@ -242,7 +242,7 @@ def main():
             if not test():
                 failed.append(test.__name__)
         except Exception as e:
-            print(f"  ✗ {test.__name__} failed: {e}")
+            print(f"  [FAIL] {test.__name__} failed: {e}")
             failed.append(test.__name__)
 
     print("\n" + "=" * 60)

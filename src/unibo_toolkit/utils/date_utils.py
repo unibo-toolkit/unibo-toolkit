@@ -1,5 +1,7 @@
 """Date and academic year utilities for UniBo timetables."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Tuple
 
