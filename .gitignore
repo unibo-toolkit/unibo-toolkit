@@ -117,4 +117,5 @@ cython_debug/
 .idea/
 .dev_plan/
 dev_plan/
-tests/
+tests/*
+!tests/smoke_test.py
