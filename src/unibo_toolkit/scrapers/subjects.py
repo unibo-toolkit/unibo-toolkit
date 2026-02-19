@@ -157,6 +157,21 @@ class SubjectsScraper:
         logger.warning("No subjects found", year=academic_year)
         return []
 
+    async def _fetch_with_delay(self, year_index: int, year: int, course_site_url: str) -> List[Subject]:
+        """Fetch subjects for a single year after an index-based delay.
+
+        The delay staggers the start time of each request by `request_delay` seconds
+        to respect rate limiting while still running the underlying requests concurrently.
+        """
+        delay = year_index * self.request_delay
+        if delay > 0:
+            await asyncio.sleep(delay)
+
+        return await self.fetch_subjects(
+            course_site_url=course_site_url,
+            academic_year=year,
+        )
+
     async def get_subjects(
         self,
         course_site_url: str,
@@ -164,7 +179,7 @@ class SubjectsScraper:
     ) -> Dict[int, List[Subject]]:
         """Fetch subjects for multiple academic years.
 
-        Fetches all years concurrently for better performance.
+        Fetches all years concurrently
 
         Args:
             course_site_url: Course site URL
@@ -183,21 +198,13 @@ class SubjectsScraper:
         """
         logger.info("Fetching subjects for multiple years", years=str(academic_years))
 
-        # Fetch all years concurrently
+        # Fetch all years
         tasks = [
-            self.fetch_subjects(
-                course_site_url=course_site_url,
-                academic_year=year,
-            )
-            for year in academic_years
+            self._fetch_with_delay(index, year, course_site_url)
+            for index, year in enumerate(academic_years)
         ]
 
-        # Add delay between concurrent requests
-        subjects_lists = []
-        for task in tasks:
-            subjects = await task
-            subjects_lists.append(subjects)
-            await asyncio.sleep(self.request_delay)
+        subjects_lists = await asyncio.gather(*tasks)
 
         # Build result dictionary
         result = {year: subjects for year, subjects in zip(academic_years, subjects_lists)}

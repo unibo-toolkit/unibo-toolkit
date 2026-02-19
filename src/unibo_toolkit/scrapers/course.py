@@ -1,6 +1,7 @@
 """Course scraper for UniBo website."""
 
 import json
+from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
 from bs4 import BeautifulSoup
@@ -142,18 +143,22 @@ class CourseScraper:
                 self._current_year = int(catalog["data-year"])
                 logger.info("Academic year detected", year=self._current_year)
                 return self._current_year
-            else:
-                logger.warning(
-                    "Could not find data-year attribute, using fallback", fallback_year=2026
-                )
-                self._current_year = 2026  # TODO review
-                return self._current_year
+
+            fallback_year = datetime.now().year
+            logger.warning(
+                "Could not find data-year attribute, using fallback", fallback_year=fallback_year
+            )
+            self._current_year = fallback_year
+            return self._current_year
 
         except Exception as e:
+            fallback_year = datetime.now().year
             logger.error(
-                "Failed to detect current year, using fallback", error=str(e), fallback_year=2026
+                "Failed to detect current year, using fallback",
+                error=str(e),
+                fallback_year=fallback_year,
             )
-            self._current_year = 2026
+            self._current_year = fallback_year
             return self._current_year
 
     async def get_areas(
@@ -250,14 +255,14 @@ class CourseScraper:
 
         logger.info("Fetching courses from area", area=area.title_it, language=language.value)
 
-        if course_type == CourseType.MASTER:
-            categories_to_fetch = ["master"]
-        elif course_type == CourseType.BACHELOR:
-            categories_to_fetch = ["bachelor"]
-        elif course_type == CourseType.SINGLE_CYCLE_MASTER:
-            categories_to_fetch = ["single_cycle"]
-        else:
-            categories_to_fetch = ["master", "bachelor", "single_cycle"]
+        course_type_mapping = {
+            CourseType.MASTER: ["master"],
+            CourseType.BACHELOR: ["bachelor"],
+            CourseType.SINGLE_CYCLE_MASTER: ["single_cycle"],
+        }
+        categories_to_fetch = course_type_mapping.get(
+            course_type, ["master", "bachelor", "single_cycle"]
+        )
 
         all_courses: List[BaseCourse] = []
 
@@ -510,19 +515,24 @@ class CourseScraper:
             from unibo_toolkit.models.curriculum import Curriculum
 
             curricula = []
-            if isinstance(data, list):
-                for item in data:
-                    if isinstance(item, dict) and "value" in item:
-                        value = item.get("value")
-                        label = item.get("label", "")
-                        selected = item.get("selected", False)
+            if not isinstance(data, list):
+                logger.warning(
+                    "Unexpected curricula response format", course_site_url=course_site_url, data=data
+                )
+                return []
 
-                        # Skip None/undefined values
-                        if value is not None and value != "":
-                            curriculum = Curriculum(
-                                code=str(value), label=str(label), selected=selected
-                            )
-                            curricula.append(curriculum)
+            for item in data:
+                if isinstance(item, dict) and "value" in item:
+                    value = item.get("value")
+                    label = item.get("label", "")
+                    selected = item.get("selected", False)
+
+                    # Skip None/undefined values
+                    if value is not None and value != "":
+                        curriculum = Curriculum(
+                            code=str(value), label=str(label), selected=selected
+                        )
+                        curricula.append(curriculum)
 
             logger.info(
                 "Curricula fetched successfully",

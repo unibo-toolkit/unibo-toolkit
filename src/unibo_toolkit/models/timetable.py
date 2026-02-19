@@ -705,4 +705,7 @@ class AcademicYearTimetable:
 
     def __str__(self) -> str:
         """String representation."""
-        return f"Year {self.year}: {len(self.curricula)} curricula, {len(self.get_all_events())} total events"
+        return (
+            f"Year {self.year}: {len(self.curricula)} curricula, "
+            f"{len(self.get_all_events())} total events"
+        )
