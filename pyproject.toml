@@ -3,7 +3,7 @@ name = "unibo-toolkit"
 version = "0.3.0.dev20260219102109"
 description = "Python toolkit for scraping and accessing University of Bologna data"
 authors = [
-    {name = "Vadym Teliatnyk", email = "laivhakin@gmail.com"}
+    {name = "Vadym Teliatnyk", email = "vadym.teliatnyk@komo4ek.me"}
 ]
 license = {text = "MIT"}
 readme = "README.md"
