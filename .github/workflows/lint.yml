@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - '**'
-  pull_request:
-    branches:
-      - '**'
 
 jobs:
   black:
@@ -50,4 +47,4 @@ jobs:
       - name: Push changes
         if: steps.verify_diff.outputs.changed == 'true'
         run: |
-          git push
+          git push origin HEAD:${{ github.ref_name }}
