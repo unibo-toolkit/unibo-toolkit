@@ -34,8 +34,11 @@ def get_current_version() -> str:
 
 def parse_version(version: str) -> Tuple[int, int, int]:
     """Parse semver version string."""
-    # Remove any pre-release suffix (e.g., 0.1.0-dev.123 → 0.1.0)
     base_version = version.split("-")[0]
+
+    if ".dev" in base_version:
+        base_version = base_version.split(".dev")[0]
+
     parts = base_version.split(".")
 
     if len(parts) != 3:
