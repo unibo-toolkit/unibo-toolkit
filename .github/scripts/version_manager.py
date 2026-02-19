@@ -253,12 +253,11 @@ def main():
     update_pyproject_version(new_version)
     update_init_version(new_version)
 
-    print(f"\n::set-output name=version::{new_version}")
-    print(f"::set-output name=changelog::{changelog}")
+    changelog_escaped = changelog.replace("\\", "\\\\").replace("'", "'\\''").replace("\n", "\\n")
 
     with open("/tmp/version_outputs.txt", "w") as f:
         f.write(f"VERSION={new_version}\n")
-        f.write(f"CHANGELOG<<EOF\n{changelog}\nEOF\n")
+        f.write(f"CHANGELOG=$'{changelog_escaped}'\n")
 
     print("\n=== CHANGELOG ===")
     print(changelog)
