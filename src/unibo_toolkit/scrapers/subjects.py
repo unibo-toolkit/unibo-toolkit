@@ -157,7 +157,9 @@ class SubjectsScraper:
         logger.warning("No subjects found", year=academic_year)
         return []
 
-    async def _fetch_with_delay(self, year_index: int, year: int, course_site_url: str) -> List[Subject]:
+    async def _fetch_with_delay(
+        self, year_index: int, year: int, course_site_url: str
+    ) -> List[Subject]:
         """Fetch subjects for a single year after an index-based delay.
 
         The delay staggers the start time of each request by `request_delay` seconds

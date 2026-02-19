@@ -517,7 +517,9 @@ class CourseScraper:
             curricula = []
             if not isinstance(data, list):
                 logger.warning(
-                    "Unexpected curricula response format", course_site_url=course_site_url, data=data
+                    "Unexpected curricula response format",
+                    course_site_url=course_site_url,
+                    data=data,
                 )
                 return []
 
