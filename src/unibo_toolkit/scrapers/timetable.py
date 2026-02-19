@@ -26,15 +26,6 @@ class TimetableScraper:
 
     Supports fetching timetables for single or multiple academic years,
     with configurable caching and date ranges.
-
-    Example:
-        >>> async with TimetableScraper() as scraper:
-        ...     collection = await scraper.get_timetables(
-        ...         course_site_url="https://corsi.unibo.it/magistrale/ComputerScience",
-        ...         course_id=6796,
-        ...         course_title="Computer Science",
-        ...         academic_years=[1, 2]
-        ...     )
     """
 
     # API endpoint patterns (language-dependent)
@@ -46,7 +37,6 @@ class TimetableScraper:
     def __init__(
         self,
         http_client: Optional[HTTPClient] = None,
-        request_delay: float = 0.0,
     ):
         """Initialize timetable scraper.
 
@@ -58,8 +48,7 @@ class TimetableScraper:
         self._internal_client: Optional[HTTPClient] = None
         self.http_client: HTTPClient = http_client
         self.parser = TimetableParser()
-        self.request_delay = request_delay
-        logger.debug("TimetableScraper initialized", delay_seconds=request_delay)
+        logger.debug("TimetableScraper initialized")
 
     async def __aenter__(self):
         """Enter async context manager."""

@@ -58,8 +58,8 @@ class CourseScraper:
 
         Args:
             http_client: Optional HTTP client. If None, scraper creates and manages its own client
-            area_delay: Delay in seconds between area fetch requests (default: 0.1s)
-            course_delay: Delay in seconds between course list requests (default: 0.1s)
+            area_delay: Delay in seconds between area fetch requests (default: 0.0s)
+            course_delay: Delay in seconds between course list requests (default: 0.0s)
 
         Example:
             # Simple usage - scraper manages HTTP client automatically
