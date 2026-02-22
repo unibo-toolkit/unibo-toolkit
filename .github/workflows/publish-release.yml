@@ -1,7 +1,10 @@
 name: Publish Release to PyPI
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Test Package"]
+    types:
+      - completed
     branches:
       - main
   workflow_dispatch:
@@ -12,37 +15,9 @@ on:
         type: string
 
 jobs:
-  test:
-    name: Test on Python ${{ matrix.python-version }}
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install package
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e .
-
-      - name: Run smoke test
-        run: |
-          python tests/smoke_test.py
-
   publish-release:
-    needs: test
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     permissions:
       contents: write
 
@@ -57,6 +32,11 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
 
       - name: Determine version
         id: version

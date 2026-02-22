@@ -151,7 +151,7 @@ def update_pyproject_version(new_version: str):
     )
 
     pyproject_path.write_text(new_content)
-    print(f"✓ Updated pyproject.toml to version {new_version}")
+    print(f"[OK] Updated pyproject.toml to version {new_version}")
 
 
 def update_init_version(new_version: str):
@@ -186,7 +186,7 @@ def update_init_version(new_version: str):
         new_content = "\n".join(lines)
 
     init_path.write_text(new_content)
-    print(f"✓ Updated __init__.py to version {new_version}")
+    print(f"[OK] Updated __init__.py to version {new_version}")
 
 
 def create_dev_version(base_version: str) -> str:
