@@ -158,7 +158,7 @@ jobs:
 
       - name: Create summary
         run: |
-          echo "##Release Published" >> $GITHUB_STEP_SUMMARY
+          echo "## Release Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** \`${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**PyPI:** [unibo-toolkit](https://pypi.org/project/unibo-toolkit/)" >> $GITHUB_STEP_SUMMARY

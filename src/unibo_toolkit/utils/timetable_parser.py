@@ -187,14 +187,10 @@ class TimetableParser:
         if not isinstance(response_data, list):
             return False
 
-        # Empty list is valid (no timetable)
-        if len(response_data) == 0:
+        # Empty list is valid
+        if not response_data:
             return True
 
-        # Check first event has required fields
-        if len(response_data) > 0:
-            first_event = response_data[0]
-            required_fields = ["title", "start", "end"]
-            return all(field in first_event for field in required_fields)
-
-        return True
+        first_event = response_data[0]
+        required_fields = ["title", "start", "end"]
+        return all(field in first_event for field in required_fields)
