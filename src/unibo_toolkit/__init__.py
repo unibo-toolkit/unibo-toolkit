@@ -13,7 +13,7 @@ from unibo_toolkit.logging import setup_logging
 from unibo_toolkit.models import AreaInfo, Bachelor, BaseCourse, Master, SingleCycleMaster
 from unibo_toolkit.scrapers import CourseScraper
 
-__version__ = "0.3.0.dev20260222180907"
+__version__ = "0.3.0.dev20260222181356"
 
 __all__ = [
     "__version__",
