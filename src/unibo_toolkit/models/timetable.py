@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
+from hashlib import sha256
 from typing import Dict, List, Optional
 
 from unibo_toolkit.models import Curriculum
@@ -357,6 +358,7 @@ class TimetableCollection:
 
     Attributes:
         years: Dictionary mapping year number to AcademicYearTimetable
+        content_hash: Hierarchical hash computed from all year hashes
 
     Example:
         >>> collection = TimetableCollection()
@@ -377,6 +379,7 @@ class TimetableCollection:
     """
 
     years: Dict[int, AcademicYearTimetable] = field(default_factory=dict)
+    content_hash: str = field(default="", init=False)
 
     def get_or_create_year(self, year: int) -> AcademicYearTimetable:
         """Get or create an AcademicYearTimetable.
@@ -428,6 +431,16 @@ class TimetableCollection:
         """
         year_tt = self.get_or_create_year(year)
         year_tt.add_curriculum_timetable(curriculum_timetable)
+        self._update_hash()
+
+    def _update_hash(self) -> None:
+        """Update hierarchical hash from all year hashes."""
+        if not self.years:
+            self.content_hash = ""
+            return
+
+        combined = "".join(year_tt.content_hash for year_num, year_tt in sorted(self.years.items()))
+        self.content_hash = sha256(combined.encode("utf-8")).hexdigest()[:16]
 
     def get_all_years(self) -> List[int]:
         """Get list of all years in the collection.
@@ -622,13 +635,15 @@ class CurriculumTimetable:
     Attributes:
         curriculum: The curriculum this timetable belongs to
         events: List of timetable events for this curriculum
+        content_hash: SHA-256 hash of event content (first 16 chars)
 
     Example:
         >>> from unibo_toolkit.models.curriculum import Curriculum
         >>> curriculum = Curriculum(code="B69-000", label="Advanced Track")
         >>> timetable = CurriculumTimetable(
         ...     curriculum=curriculum,
-        ...     events=[event1, event2, ...]
+        ...     events=[event1, event2, ...],
+        ...     content_hash="a3f5e9d2b8c1f4e7"
         ... )
         >>> print(len(timetable.events))
         42
@@ -636,6 +651,7 @@ class CurriculumTimetable:
 
     curriculum: "Curriculum"  # Forward reference
     events: List[TimetableEvent] = field(default_factory=list)
+    content_hash: str = ""
 
     def add_event(self, event: TimetableEvent) -> None:
         """Add an event to this curriculum's timetable."""
@@ -668,6 +684,7 @@ class AcademicYearTimetable:
     Attributes:
         year: Academic year number (1, 2, 3, etc.)
         curricula: Dictionary mapping curriculum code to CurriculumTimetable
+        content_hash: Hierarchical hash computed from all curricula hashes
 
     Example:
         >>> year_timetable = AcademicYearTimetable(year=1)
@@ -678,11 +695,25 @@ class AcademicYearTimetable:
 
     year: int
     curricula: Dict[str, CurriculumTimetable] = field(default_factory=dict)
+    content_hash: str = field(default="", init=False)
 
     def add_curriculum_timetable(self, curriculum_timetable: CurriculumTimetable) -> None:
         """Add a curriculum timetable to this year."""
         code = curriculum_timetable.curriculum.code
         self.curricula[code] = curriculum_timetable
+        self._update_hash()
+
+    def _update_hash(self) -> None:
+        """Update hierarchical hash from all curricula hashes."""
+        if not self.curricula:
+            self.content_hash = ""
+            return
+
+        # Combine hashes from all curricula
+        combined = "".join(
+            ct.content_hash for code, ct in sorted(self.curricula.items())
+        )
+        self.content_hash = sha256(combined.encode("utf-8")).hexdigest()[:16]
 
     def get_curriculum(self, code: str) -> Optional[CurriculumTimetable]:
         """Get timetable for a specific curriculum by code."""

@@ -1,7 +1,8 @@
 """Parser for UniBo timetable API responses."""
 
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+import json
+from hashlib import sha256
+from typing import Any, Dict, List, Tuple
 
 from unibo_toolkit.models import Classroom, TimetableEvent
 from unibo_toolkit.utils.date_utils import parse_api_datetime
@@ -127,27 +128,50 @@ class TimetableParser:
         )
 
     @staticmethod
-    def parse_events(events_data: List[Dict[str, Any]]) -> List[TimetableEvent]:
-        """Parse list of events from API response.
+    def parse_events(events_data: List[Dict[str, Any]]) -> Tuple[List[TimetableEvent], str]:
+        """Parse list of events from API response and compute content hash.
 
         Args:
             events_data: List of event dictionaries from API
 
         Returns:
-            List of TimetableEvent objects sorted by start time
+            Tuple of (events_list, content_hash):
+                - events_list: List of TimetableEvent objects sorted by start time
+                - content_hash: SHA-256 hash (first 16 chars) of event content
 
         Example:
             >>> events_json = [{"title": "...", "start": "...", ...}, ...]
-            >>> events = TimetableParser.parse_events(events_json)
+            >>> events, content_hash = TimetableParser.parse_events(events_json)
             >>> len(events)
             346
         """
-        events = [TimetableParser.parse_event(event_data) for event_data in events_data]
+        events = []
+        hash_input = []
 
-        # Sort by start time
+        for event_data in events_data:
+            event = TimetableParser.parse_event(event_data)
+            events.append(event)
+
+            # Collect significant fields for hashing
+            hash_input.append({
+                "title": event.title,
+                "start": event.start.isoformat(),
+                "end": event.end.isoformat(),
+                "professor": event.professor,
+                "module_code": event.module_code,
+                "teaching_period": event.teaching_period,
+                "is_remote": event.is_remote,
+            })
+
         events.sort(key=lambda e: e.start)
 
-        return events
+        # Compute stable hash
+        content_hash = ""
+        if hash_input:
+            json_str = json.dumps(hash_input, sort_keys=True, ensure_ascii=False)
+            content_hash = sha256(json_str.encode("utf-8")).hexdigest()[:16]
+
+        return events, content_hash
 
     @staticmethod
     def validate_response(response_data: Any) -> bool:

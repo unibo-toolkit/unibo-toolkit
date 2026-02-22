@@ -170,14 +170,15 @@ class TimetableScraper:
                     logger.warning("Invalid response from endpoint", endpoint=endpoint)
                     continue
 
-                # Parse events
-                events = self.parser.parse_events(json_data)
+                # Parse events and compute content hash
+                events, content_hash = self.parser.parse_events(json_data)
 
                 logger.info(
                     "Timetable fetched successfully",
                     course=course_title,
                     year=academic_year,
                     events_count=len(events),
+                    content_hash=content_hash,
                     endpoint=endpoint,
                 )
 
@@ -268,32 +269,35 @@ class TimetableScraper:
                     continue
 
                 # Parse events
-                events = self.parser.parse_events(json_data)
+                events, content_hash = self.parser.parse_events(json_data)
 
                 logger.info(
                     "Curriculum timetable fetched successfully",
                     curriculum=curriculum.code,
                     year=academic_year,
                     events_count=len(events),
+                    content_hash=content_hash,
                     endpoint=endpoint,
                 )
 
                 return CurriculumTimetable(
                     curriculum=curriculum,
                     events=events,
+                    content_hash=content_hash,
                 )
 
             except Exception as e:
                 logger.warning("Endpoint failed", endpoint=endpoint, error=str(e))
                 continue
 
-        # All endpoints failed - return empty timetable
+        # All endpoints failed
         logger.warning(
             "No timetable found for curriculum", curriculum=curriculum.code, year=academic_year
         )
         return CurriculumTimetable(
             curriculum=curriculum,
             events=[],
+            content_hash="",
         )
 
     async def get_timetables(
