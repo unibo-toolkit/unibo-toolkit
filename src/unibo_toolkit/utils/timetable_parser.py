@@ -153,15 +153,17 @@ class TimetableParser:
             events.append(event)
 
             # Collect significant fields for hashing
-            hash_input.append({
-                "title": event.title,
-                "start": event.start.isoformat(),
-                "end": event.end.isoformat(),
-                "professor": event.professor,
-                "module_code": event.module_code,
-                "teaching_period": event.teaching_period,
-                "is_remote": event.is_remote,
-            })
+            hash_input.append(
+                {
+                    "title": event.title,
+                    "start": event.start.isoformat(),
+                    "end": event.end.isoformat(),
+                    "professor": event.professor,
+                    "module_code": event.module_code,
+                    "teaching_period": event.teaching_period,
+                    "is_remote": event.is_remote,
+                }
+            )
 
         events.sort(key=lambda e: e.start)
 

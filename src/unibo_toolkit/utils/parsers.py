@@ -218,7 +218,9 @@ class CourseParser:
         Returns:
             Campus enum value (defaults to BOLOGNA if not found)
         """
-        campus_text = CourseParser._find_field_value(paragraphs, "sede didattica") or CourseParser._find_field_value(paragraphs, "place of teaching")
+        campus_text = CourseParser._find_field_value(
+            paragraphs, "sede didattica"
+        ) or CourseParser._find_field_value(paragraphs, "place of teaching")
         return CourseParser.CAMPUS_MAP.get(campus_text.lower(), Campus.BOLOGNA)
 
     @staticmethod
@@ -231,7 +233,9 @@ class CourseParser:
         Returns:
             List of Language enums (e.g., [Language.IT] or [Language.EN, Language.IT])
         """
-        language_text = CourseParser._find_field_value(paragraphs, "lingua") or CourseParser._find_field_value(paragraphs, "language")
+        language_text = CourseParser._find_field_value(
+            paragraphs, "lingua"
+        ) or CourseParser._find_field_value(paragraphs, "language")
 
         if not language_text:
             return [Language.IT]
@@ -257,7 +261,9 @@ class CourseParser:
         Returns:
             Duration in years (2, 3, 5, or 6)
         """
-        duration_text = CourseParser._find_field_value(paragraphs, "durata") or CourseParser._find_field_value(paragraphs, "duration")
+        duration_text = CourseParser._find_field_value(
+            paragraphs, "durata"
+        ) or CourseParser._find_field_value(paragraphs, "duration")
 
         if duration_text:
             match = re.search(r"(\d+)", duration_text)
@@ -280,7 +286,9 @@ class CourseParser:
         Returns:
             Tuple of (AccessType enum, number of seats or None)
         """
-        access_text = CourseParser._find_field_value(paragraphs, "tipo di accesso") or CourseParser._find_field_value(paragraphs, "type of access")
+        access_text = CourseParser._find_field_value(
+            paragraphs, "tipo di accesso"
+        ) or CourseParser._find_field_value(paragraphs, "type of access")
         access_lower = access_text.lower()
 
         if "libero" in access_lower or "open access" in access_lower:

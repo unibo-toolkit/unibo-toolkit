@@ -267,14 +267,13 @@ class CourseScraper:
             task = self.http_client.get(url, params=params)
             tasks.append((cat_key, category_path, task))
 
-        results = await asyncio.gather(
-            *[task for _, _, task in tasks],
-            return_exceptions=True
-        )
+        results = await asyncio.gather(*[task for _, _, task in tasks], return_exceptions=True)
 
         for (cat_key, category_path, _), result in zip(tasks, results):
             if isinstance(result, Exception):
-                logger.warning("Failed to fetch courses from category", category=cat_key, error=str(result))
+                logger.warning(
+                    "Failed to fetch courses from category", category=cat_key, error=str(result)
+                )
                 continue
 
             try:
@@ -282,7 +281,9 @@ class CourseScraper:
                 all_courses.extend(courses)
                 logger.debug("Courses found", count=len(courses), category=cat_key)
             except Exception as e:
-                logger.warning("Failed to parse courses from category", category=cat_key, error=str(e))
+                logger.warning(
+                    "Failed to parse courses from category", category=cat_key, error=str(e)
+                )
                 continue
 
         if course_type:
@@ -291,7 +292,9 @@ class CourseScraper:
         # Fetch course site URLs if requested
         if with_site_urls:
             logger.debug("Fetching course site URLs", courses_count=len(all_courses))
-            await asyncio.gather(*[course.fetch_site_url(self.http_client) for course in all_courses])
+            await asyncio.gather(
+                *[course.fetch_site_url(self.http_client) for course in all_courses]
+            )
 
         logger.info("Courses fetched from area", area=area.title_it, total_count=len(all_courses))
         return all_courses
@@ -353,17 +356,14 @@ class CourseScraper:
             )
             tasks.append((area_info, task))
 
-        results = await asyncio.gather(
-            *[task for _, task in tasks],
-            return_exceptions=True
-        )
+        results = await asyncio.gather(*[task for _, task in tasks], return_exceptions=True)
 
         for (area_info, _), result in zip(tasks, results):
             if isinstance(result, Exception):
                 logger.warning(
                     "Failed to fetch courses from area",
                     area=area_info.area.title_it,
-                    error=str(result)
+                    error=str(result),
                 )
                 continue
 

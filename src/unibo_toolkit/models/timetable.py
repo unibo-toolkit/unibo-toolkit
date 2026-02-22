@@ -719,9 +719,7 @@ class AcademicYearTimetable:
             return
 
         # Combine hashes from all curricula
-        combined = "".join(
-            ct.content_hash for code, ct in sorted(self.curricula.items())
-        )
+        combined = "".join(ct.content_hash for code, ct in sorted(self.curricula.items()))
         self.content_hash = sha256(combined.encode("utf-8")).hexdigest()[:16]
 
     def get_curriculum(self, code: str) -> Optional[CurriculumTimetable]:
