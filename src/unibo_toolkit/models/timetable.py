@@ -206,6 +206,9 @@ class Timetable:
     has_timetable: bool = True
     fetch_successful: bool = True
     endpoint_used: Optional[str] = None
+    _unique_courses: Optional[List[str]] = field(default=None, init=False, repr=False)
+    _professors: Optional[List[str]] = field(default=None, init=False, repr=False)
+    _available_groups: Optional[List[str]] = field(default=None, init=False, repr=False)
 
     def __post_init__(self):
         """Sort events by start time."""
@@ -228,7 +231,9 @@ class Timetable:
         Returns:
             Sorted list of unique course/subject names
         """
-        return sorted(set(e.title for e in self.events))
+        if self._unique_courses is None:
+            self._unique_courses = sorted(set(e.title for e in self.events))
+        return self._unique_courses
 
     @property
     def professors(self) -> List[str]:
@@ -237,7 +242,9 @@ class Timetable:
         Returns:
             Sorted list of unique professor names
         """
-        return sorted(set(e.professor for e in self.events if e.professor))
+        if self._professors is None:
+            self._professors = sorted(set(e.professor for e in self.events if e.professor))
+        return self._professors
 
     @property
     def available_groups(self) -> List[str]:
@@ -254,11 +261,13 @@ class Timetable:
         Returns:
             Sorted list of group identifiers
         """
-        groups = set()
-        for event in self.events:
-            if event.group_id:
-                groups.add(event.group_id)
-        return sorted(list(groups))
+        if self._available_groups is None:
+            groups = set()
+            for event in self.events:
+                if event.group_id:
+                    groups.add(event.group_id)
+            self._available_groups = sorted(list(groups))
+        return self._available_groups
 
     def get_events_by_course(self, course_title: str) -> List[TimetableEvent]:
         """Filter events by course title.

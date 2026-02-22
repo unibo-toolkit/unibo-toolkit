@@ -74,7 +74,7 @@ class BaseCourse(ABC):
         """
         return self.course_site_url is not None
 
-    async def fetch_site_url(self) -> Optional[str]:
+    async def fetch_site_url(self, http_client: Optional["HTTPClient"] = None) -> Optional[str]:
         """Fetch and cache the course site URL.
 
         This method fetches the course page and extracts the detailed course site URL
@@ -89,6 +89,9 @@ class BaseCourse(ABC):
         have Italian URLs (/magistrale/, /laurea/), while English-taught courses will
         have English URLs (/2cycle/, /1cycle/). This is the actual structure of the
         UniBo website.
+
+        Args:
+            http_client: Optional HTTP client to reuse. If None, creates a new one.
 
         Returns:
             The course site URL if found, None otherwise
@@ -111,18 +114,29 @@ class BaseCourse(ABC):
         from unibo_toolkit.clients import HTTPClient
 
         try:
-            async with HTTPClient() as client:
-                html = await client.get(self.url)
+            if http_client:
+                html = await http_client.get(self.url)
                 soup = BeautifulSoup(html, "html.parser")
 
-                # Find "Sito web del corso" link
                 corso_link = soup.find("a", href=lambda x: x and "corsi.unibo.it" in x)
 
                 if corso_link:
                     self.course_site_url = corso_link["href"]
                     return self.course_site_url
 
-            return None
+                return None
+            else:
+                async with HTTPClient() as client:
+                    html = await client.get(self.url)
+                    soup = BeautifulSoup(html, "html.parser")
+
+                    corso_link = soup.find("a", href=lambda x: x and "corsi.unibo.it" in x)
+
+                    if corso_link:
+                        self.course_site_url = corso_link["href"]
+                        return self.course_site_url
+
+                return None
 
         except Exception as e:
             logger.warning("Failed to fetch course site URL", url=self.url, error=str(e))

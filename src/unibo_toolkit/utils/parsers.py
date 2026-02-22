@@ -144,11 +144,14 @@ class CourseParser:
         if not text_wrapper:
             return None
 
+        # Cache DOM traversal - find all paragraphs once
+        paragraphs_cache = text_wrapper.find_all("p")
+
         # Extract all course details
-        campus = CourseParser._extract_campus(text_wrapper)
-        languages = CourseParser._extract_languages(text_wrapper)
-        duration_years = CourseParser._extract_duration(text_wrapper, category)
-        access_type, seats = CourseParser._extract_access_type(text_wrapper)
+        campus = CourseParser._extract_campus(paragraphs_cache)
+        languages = CourseParser._extract_languages(paragraphs_cache)
+        duration_years = CourseParser._extract_duration(paragraphs_cache, category)
+        access_type, seats = CourseParser._extract_access_type(paragraphs_cache)
 
         # Get course URL
         link_elem = item.find("a", href=True)
@@ -184,17 +187,17 @@ class CourseParser:
             return SingleCycleMaster(**course_data)
 
     @staticmethod
-    def _find_field_value(text_wrapper: Tag, field_name: str) -> str:
-        """Extract field value from text wrapper by searching for field name in span.
+    def _find_field_value(paragraphs: List, field_name: str) -> str:
+        """Extract field value from cached paragraphs by searching for field name in span.
 
         Args:
-            text_wrapper: BeautifulSoup Tag containing course details
+            paragraphs: Cached list of paragraph elements
             field_name: Field name to search for (case-insensitive)
 
         Returns:
             Field value or empty string if not found
         """
-        for p in text_wrapper.find_all("p"):
+        for p in paragraphs:
             span = p.find("span")
             if span and field_name.lower() in span.get_text(strip=True).lower():
                 # Remove field label and return value
@@ -206,40 +209,33 @@ class CourseParser:
         return ""
 
     @staticmethod
-    def _extract_campus(text_wrapper: Tag) -> Campus:
-        """Extract campus location from text wrapper.
+    def _extract_campus(paragraphs: List) -> Campus:
+        """Extract campus location from cached paragraphs.
 
         Args:
-            text_wrapper: Tag containing course details
+            paragraphs: Cached list of paragraph elements
 
         Returns:
             Campus enum value (defaults to BOLOGNA if not found)
         """
-        # Try both Italian "Sede didattica" and English "Place of teaching"
-        campus_text = CourseParser._find_field_value(text_wrapper, "sede didattica")
-        if not campus_text:
-            campus_text = CourseParser._find_field_value(text_wrapper, "place of teaching")
+        campus_text = CourseParser._find_field_value(paragraphs, "sede didattica") or CourseParser._find_field_value(paragraphs, "place of teaching")
         return CourseParser.CAMPUS_MAP.get(campus_text.lower(), Campus.BOLOGNA)
 
     @staticmethod
-    def _extract_languages(text_wrapper: Tag) -> List[Language]:
-        """Extract languages of instruction from text wrapper.
+    def _extract_languages(paragraphs: List) -> List[Language]:
+        """Extract languages of instruction from cached paragraphs.
 
         Args:
-            text_wrapper: Tag containing course details
+            paragraphs: Cached list of paragraph elements
 
         Returns:
             List of Language enums (e.g., [Language.IT] or [Language.EN, Language.IT])
         """
-        # Try both Italian "Lingua" and English "Language"
-        language_text = CourseParser._find_field_value(text_wrapper, "lingua")
-        if not language_text:
-            language_text = CourseParser._find_field_value(text_wrapper, "language")
+        language_text = CourseParser._find_field_value(paragraphs, "lingua") or CourseParser._find_field_value(paragraphs, "language")
 
         if not language_text:
             return [Language.IT]
 
-        # Split by comma to handle multilingual courses
         language_parts = [lang.strip().lower() for lang in language_text.split(",")]
 
         languages = []
@@ -248,60 +244,45 @@ class CourseParser:
             if lang:
                 languages.append(lang)
 
-        # Fallback to Italian if nothing parsed
-        return languages if languages else [Language.IT]
+        return languages or [Language.IT]
 
     @staticmethod
-    def _extract_duration(text_wrapper: Tag, category: str) -> int:
-        """Extract course duration in years from text wrapper.
+    def _extract_duration(paragraphs: List, category: str) -> int:
+        """Extract course duration in years from cached paragraphs.
 
         Args:
-            text_wrapper: Tag containing course details
+            paragraphs: Cached list of paragraph elements
             category: Course category path (used as fallback)
 
         Returns:
             Duration in years (2, 3, 5, or 6)
         """
-        # Try both Italian "Durata" and English "Duration"
-        duration_text = CourseParser._find_field_value(text_wrapper, "durata")
-        if not duration_text:
-            duration_text = CourseParser._find_field_value(text_wrapper, "duration")
+        duration_text = CourseParser._find_field_value(paragraphs, "durata") or CourseParser._find_field_value(paragraphs, "duration")
 
-        # Try to extract number from "6 anni", "3 years", or just "3"
         if duration_text:
             match = re.search(r"(\d+)", duration_text)
             if match:
                 return int(match.group(1))
 
-        # Fallback to category-based detection
-        # Note: Only use URL pattern if duration is not found in HTML
         if "magistrali-a-ciclo-unico" in category:
-            return 5  # Italian single-cycle
+            return 5
         elif "magistrali" in category or "second-cycle" in category:
-            return 2  # Master's
-        # For "first-and-single-cycle" we can't determine from URL alone
-        # (it contains both 3-year bachelor and 5-6 year single-cycle)
-        # Default to 3 years if nothing else matched
-        return 3  # Bachelor's default
+            return 2
+        return 3
 
     @staticmethod
-    def _extract_access_type(text_wrapper: Tag) -> Tuple[AccessType, Optional[int]]:
-        """Extract access type and number of seats from text wrapper.
+    def _extract_access_type(paragraphs: List) -> Tuple[AccessType, Optional[int]]:
+        """Extract access type and number of seats from cached paragraphs.
 
         Args:
-            text_wrapper: Tag containing course details
+            paragraphs: Cached list of paragraph elements
 
         Returns:
             Tuple of (AccessType enum, number of seats or None)
         """
-        # Try both Italian "Tipo di accesso" and English "Type of access"
-        access_text = CourseParser._find_field_value(text_wrapper, "tipo di accesso")
-        if not access_text:
-            access_text = CourseParser._find_field_value(text_wrapper, "type of access")
-
+        access_text = CourseParser._find_field_value(paragraphs, "tipo di accesso") or CourseParser._find_field_value(paragraphs, "type of access")
         access_lower = access_text.lower()
 
-        # Check for open access (IT: "libero", EN: "open access")
         if "libero" in access_lower or "open access" in access_lower:
             return AccessType.OPEN, None
 
@@ -314,7 +295,6 @@ class CourseParser:
             seats = int(seats_match.group(1)) if seats_match else None
             return AccessType.LIMITED, seats
 
-        # Default to open access
         return AccessType.OPEN, None
 
     @staticmethod

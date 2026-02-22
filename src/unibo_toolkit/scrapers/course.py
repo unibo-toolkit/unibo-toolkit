@@ -1,5 +1,6 @@
 """Course scraper for UniBo website."""
 
+import asyncio
 import json
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
@@ -254,22 +255,34 @@ class CourseScraper:
 
         all_courses: List[BaseCourse] = []
 
+        tasks = []
         for cat_key in categories_to_fetch:
             category_path = self.CATEGORY_PATHS[language.value][cat_key]
             url = f"{self.BASE_URL}/{language.value}/{category_path}/elenco"
             params = {"schede": str(area.area_id)}
 
+            logger.debug(
+                "Fetching courses from URL", url=url, area_id=area.area_id, category=cat_key
+            )
+            task = self.http_client.get(url, params=params)
+            tasks.append((cat_key, category_path, task))
+
+        results = await asyncio.gather(
+            *[task for _, _, task in tasks],
+            return_exceptions=True
+        )
+
+        for (cat_key, category_path, _), result in zip(tasks, results):
+            if isinstance(result, Exception):
+                logger.warning("Failed to fetch courses from category", category=cat_key, error=str(result))
+                continue
+
             try:
-                logger.debug(
-                    "Fetching courses from URL", url=url, area_id=area.area_id, category=cat_key
-                )
-                html = await self.http_client.get(url, params=params)
-                courses = self.parser.parse_course_list(html, year, category_path, area)
+                courses = self.parser.parse_course_list(result, year, category_path, area)
                 all_courses.extend(courses)
                 logger.debug("Courses found", count=len(courses), category=cat_key)
-
             except Exception as e:
-                logger.warning("Failed to fetch courses from URL", url=url, error=str(e))
+                logger.warning("Failed to parse courses from category", category=cat_key, error=str(e))
                 continue
 
         if course_type:
@@ -278,8 +291,7 @@ class CourseScraper:
         # Fetch course site URLs if requested
         if with_site_urls:
             logger.debug("Fetching course site URLs", courses_count=len(all_courses))
-            for course in all_courses:
-                await course.fetch_site_url()
+            await asyncio.gather(*[course.fetch_site_url(self.http_client) for course in all_courses])
 
         logger.info("Courses fetched from area", area=area.title_it, total_count=len(all_courses))
         return all_courses
@@ -330,30 +342,35 @@ class CourseScraper:
         all_courses: List[BaseCourse] = []
         seen_course_ids = set()
 
+        tasks = []
         for area_info in areas:
             if course_type and area_info.course_type != course_type:
                 continue
 
-            try:
-                # Use the area's course type to avoid fetching duplicates
-                # If user specified course_type, use that; otherwise use area's type
-                effective_type = course_type if course_type else area_info.course_type
+            effective_type = course_type if course_type else area_info.course_type
+            task = self.get_courses_by_area(
+                area_info.area, effective_type, language, with_site_urls
+            )
+            tasks.append((area_info, task))
 
-                courses = await self.get_courses_by_area(
-                    area_info.area, effective_type, language, with_site_urls
-                )
+        results = await asyncio.gather(
+            *[task for _, task in tasks],
+            return_exceptions=True
+        )
 
-                # Deduplicate by course_id (some courses belong to multiple areas)
-                for course in courses:
-                    if course.course_id not in seen_course_ids:
-                        seen_course_ids.add(course.course_id)
-                        all_courses.append(course)
-
-            except Exception as e:
+        for (area_info, _), result in zip(tasks, results):
+            if isinstance(result, Exception):
                 logger.warning(
-                    "Failed to fetch courses from area", area=area_info.area.title_it, error=str(e)
+                    "Failed to fetch courses from area",
+                    area=area_info.area.title_it,
+                    error=str(result)
                 )
                 continue
+
+            for course in result:
+                if course.course_id not in seen_course_ids:
+                    seen_course_ids.add(course.course_id)
+                    all_courses.append(course)
 
         logger.info(
             "All courses fetched", total_count=len(all_courses), note="deduplicated by course ID"
