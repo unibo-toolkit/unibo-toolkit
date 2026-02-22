@@ -44,22 +44,16 @@ class CourseScraper:
             "single_cycle": "study/first-and-single-cycle-degree",
         },
     }
-    DEFAULT_AREA_DELAY = 0.0
-    DEFAULT_COURSE_DELAY = 0.0
     SUPPORTED_LANGUAGES = [Language.EN, Language.IT]
 
     def __init__(
         self,
         http_client: Optional[HTTPClient] = None,
-        area_delay: float = DEFAULT_AREA_DELAY,
-        course_delay: float = DEFAULT_COURSE_DELAY,
     ):
         """Initialize the course scraper.
 
         Args:
             http_client: Optional HTTP client. If None, scraper creates and manages its own client
-            area_delay: Delay in seconds between area fetch requests (default: 0.0s)
-            course_delay: Delay in seconds between course list requests (default: 0.0s)
 
         Example:
             # Simple usage - scraper manages HTTP client automatically
@@ -75,14 +69,8 @@ class CourseScraper:
         self._internal_client: Optional[HTTPClient] = None
         self.http_client: HTTPClient = http_client  # Will be set in __aenter__ if None
         self.parser = CourseParser()
-        self.area_delay = area_delay
-        self.course_delay = course_delay
         self._current_year: Optional[int] = None
-        logger.debug(
-            "CourseScraper initialized",
-            area_delay_seconds=area_delay,
-            course_delay_seconds=course_delay,
-        )
+        logger.debug("CourseScraper initialized")
 
     async def __aenter__(self):
         """Enter async context manager."""

@@ -34,20 +34,17 @@ class SubjectsScraper:
     def __init__(
         self,
         http_client: Optional[HTTPClient] = None,
-        request_delay: float = 0.2,
     ):
         """Initialize subjects scraper.
 
         Args:
             http_client: Optional HTTP client. If None, creates own client.
-            request_delay: Delay between requests in seconds (default: 0.2s)
         """
         self._external_client = http_client
         self._internal_client: Optional[HTTPClient] = None
         self.http_client: HTTPClient = http_client
         self.parser = SubjectsParser()
-        self.request_delay = request_delay
-        logger.debug("SubjectsScraper initialized", delay_seconds=request_delay)
+        logger.debug("SubjectsScraper initialized")
 
     async def __aenter__(self):
         """Enter async context manager."""
@@ -157,31 +154,12 @@ class SubjectsScraper:
         logger.warning("No subjects found", year=academic_year)
         return []
 
-    async def _fetch_with_delay(
-        self, year_index: int, year: int, course_site_url: str
-    ) -> List[Subject]:
-        """Fetch subjects for a single year after an index-based delay.
-
-        The delay staggers the start time of each request by `request_delay` seconds
-        to respect rate limiting while still running the underlying requests concurrently.
-        """
-        delay = year_index * self.request_delay
-        if delay > 0:
-            await asyncio.sleep(delay)
-
-        return await self.fetch_subjects(
-            course_site_url=course_site_url,
-            academic_year=year,
-        )
-
     async def get_subjects(
         self,
         course_site_url: str,
         academic_years: List[int],
     ) -> Dict[int, List[Subject]]:
         """Fetch subjects for multiple academic years.
-
-        Fetches all years concurrently
 
         Args:
             course_site_url: Course site URL
@@ -200,10 +178,10 @@ class SubjectsScraper:
         """
         logger.info("Fetching subjects for multiple years", years=str(academic_years))
 
-        # Fetch all years
+        # Fetch all years concurrently
         tasks = [
-            self._fetch_with_delay(index, year, course_site_url)
-            for index, year in enumerate(academic_years)
+            self.fetch_subjects(course_site_url=course_site_url, academic_year=year)
+            for year in academic_years
         ]
 
         subjects_lists = await asyncio.gather(*tasks)

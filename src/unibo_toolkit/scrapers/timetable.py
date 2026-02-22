@@ -42,7 +42,6 @@ class TimetableScraper:
 
         Args:
             http_client: Optional HTTP client. If None, creates own client.
-            request_delay: Delay between requests in seconds (default: 0.0s)
         """
         self._external_client = http_client
         self._internal_client: Optional[HTTPClient] = None
@@ -352,7 +351,7 @@ class TimetableScraper:
                 )
                 tasks.append((year, task))
 
-        # Fetch all combinations concurrently (zero delay)
+        # Fetch all combinations concurrently
         results = await asyncio.gather(*[task for _, task in tasks])
 
         # Build hierarchical collection
