@@ -2,8 +2,39 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Tuple, Optional
+import calendar
+from datetime import datetime, timedelta
+from typing import List, Optional, Tuple
+
+# Maximum allowed difference (in days) between `start` and `end` accepted by
+# the timetable API. Larger ranges are rejected with HTTP 503.
+# Both `start` and `end` are inclusive.
+MAX_API_RANGE_DAYS = 45
+
+# Safety margin (in months) added on each side of the academic year when the
+# extended range is requested.
+EXTENDED_RANGE_MONTHS = 4
+
+
+def _add_months(date: datetime, months: int) -> datetime:
+    """Shift a datetime by a number of months, clamping the day to the month length.
+
+    Args:
+        date: Datetime to shift
+        months: Number of months to add (negative to subtract)
+
+    Returns:
+        Shifted datetime with the same time of day
+
+    Example:
+        >>> _add_months(datetime(2027, 7, 31), 4)
+        datetime(2027, 11, 30)
+    """
+    month_index = date.month - 1 + months
+    year = date.year + month_index // 12
+    month = month_index % 12 + 1
+    day = min(date.day, calendar.monthrange(year, month)[1])
+    return date.replace(year=year, month=month, day=day)
 
 
 def get_academic_year_range(
@@ -15,7 +46,7 @@ def get_academic_year_range(
 
     Args:
         reference_date: Reference date (default: today)
-        extended: If True, extends range by ±1 year for safety
+        extended: If True, extends range by ±EXTENDED_RANGE_MONTHS (4) months for safety
 
     Returns:
         Tuple of (start_date, end_date)
@@ -29,9 +60,9 @@ def get_academic_year_range(
         >>> get_academic_year_range(datetime(2025, 10, 1))
         (datetime(2025, 9, 1), datetime(2026, 7, 31))
 
-        >>> # Extended range (±1 year)
+        >>> # Extended range (±4 months)
         >>> get_academic_year_range(datetime(2026, 2, 15), extended=True)
-        (datetime(2024, 9, 1), datetime(2027, 7, 31))
+        (datetime(2025, 5, 1), datetime(2026, 11, 30))
     """
     if reference_date is None:
         reference_date = datetime.now()
@@ -54,10 +85,12 @@ def get_academic_year_range(
     start_date = datetime(start_year, 9, 1)
     end_date = datetime(end_year, 7, 31, 23, 59, 59)
 
-    # Extended range: ±1 year for capturing all possible events
+    # Extended range: safety margin for events slightly outside the academic year.
+    # The API keeps no data for past academic years and has none for future ones,
+    # so a wider margin only adds empty requests.
     if extended:
-        start_date = datetime(start_year - 1, 9, 1)
-        end_date = datetime(end_year + 1, 7, 31, 23, 59, 59)
+        start_date = _add_months(start_date, -EXTENDED_RANGE_MONTHS)
+        end_date = _add_months(end_date, EXTENDED_RANGE_MONTHS)
 
     return start_date, end_date
 
@@ -85,17 +118,58 @@ def get_api_date_range(
 
     Args:
         reference_date: Reference date (default: today)
-        extended: Use extended range (±1 year)
+        extended: Use extended range (±4 months)
 
     Returns:
         Tuple of (start_date_str, end_date_str) in YYYY-MM-DD format
 
     Example:
         >>> get_api_date_range(datetime(2026, 2, 15))
-        ('2024-09-01', '2027-07-31')
+        ('2025-05-01', '2026-11-30')
     """
     start_date, end_date = get_academic_year_range(reference_date, extended)
     return format_date_for_api(start_date), format_date_for_api(end_date)
+
+
+def split_date_range(
+    start_date: str, end_date: str, max_days: int = MAX_API_RANGE_DAYS
+) -> List[Tuple[str, str]]:
+    """Split an inclusive date range into non-overlapping chunks accepted by the API.
+
+    The timetable API returns whole days for both `start` and `end`, so consecutive
+    chunks start the day after the previous chunk ends.
+
+    Args:
+        start_date: Range start (YYYY-MM-DD), inclusive
+        end_date: Range end (YYYY-MM-DD), inclusive
+        max_days: Maximum difference in days between a chunk's start and end
+
+    Returns:
+        List of (start, end) tuples in YYYY-MM-DD format, ordered chronologically
+
+    Raises:
+        ValueError: If end_date is before start_date or max_days is negative
+
+    Example:
+        >>> split_date_range("2026-10-07", "2026-12-31")
+        [('2026-10-07', '2026-11-21'), ('2026-11-22', '2026-12-31')]
+    """
+    if max_days < 0:
+        raise ValueError("max_days must be non-negative")
+
+    start = datetime.fromisoformat(start_date)
+    end = datetime.fromisoformat(end_date)
+    if end < start:
+        raise ValueError(f"end_date {end_date} is before start_date {start_date}")
+
+    chunks = []
+    chunk_start = start
+    while chunk_start <= end:
+        chunk_end = min(chunk_start + timedelta(days=max_days), end)
+        chunks.append((format_date_for_api(chunk_start), format_date_for_api(chunk_end)))
+        chunk_start = chunk_end + timedelta(days=1)
+
+    return chunks
 
 
 def parse_api_datetime(date_str: str) -> datetime:

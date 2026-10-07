@@ -125,22 +125,19 @@ class BaseCourse(ABC):
                     return self.course_site_url
 
                 return None
-            else:
-                async with HTTPClient() as client:
-                    html = await client.get(self.url)
-                    soup = BeautifulSoup(html, "html.parser")
 
-                    corso_link = soup.find("a", href=lambda x: x and "corsi.unibo.it" in x)
+            async with HTTPClient() as client:
+                html = await client.get(self.url)
+                soup = BeautifulSoup(html, "html.parser")
 
-                    if corso_link:
-                        self.course_site_url = corso_link["href"]
-                        return self.course_site_url
+                corso_link = soup.find("a", href=lambda x: x and "corsi.unibo.it" in x)
 
-                return None
+                if corso_link:
+                    self.course_site_url = corso_link["href"]
+                    return self.course_site_url
 
         except Exception as e:
             logger.warning("Failed to fetch course site URL", url=self.url, error=str(e))
-            return None
 
     async def fetch_available_curricula(self) -> List["Curriculum"]:
         """Fetch and cache the available curricula for this course.
@@ -199,7 +196,7 @@ class BaseCourse(ABC):
                       - Single curriculum: Curriculum object
                       - Multiple curricula: [Curriculum, Curriculum, ...]
                       - All curricula: "all" (default)
-            extended_range: Use extended date range (±1 year)
+            extended_range: Use extended date range (±4 months)
             fetch_subjects: Also fetch subjects list (default: True)
 
         Returns:
