@@ -1,6 +1,6 @@
 [project]
 name = "unibo-toolkit"
-version = "0.5.0"
+version = "0.5.0.dev20261022192055"
 description = "Python toolkit for scraping and accessing University of Bologna data"
 authors = [
     {name = "Vadym Teliatnyk", email = "vadym.teliatnyk@komo4ek.me"}
