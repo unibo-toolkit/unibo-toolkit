@@ -1,6 +1,7 @@
 """Parser for UniBo timetable API responses."""
 
 import json
+from dataclasses import asdict
 from hashlib import sha256
 from typing import Any, Dict, List, Tuple
 
@@ -128,8 +129,32 @@ class TimetableParser:
         )
 
     @staticmethod
+    def event_fingerprint(event: TimetableEvent) -> Dict[str, Any]:
+        """Build the hashable representation of a single event.
+
+        Every parsed field takes part, so a field added to TimetableEvent is
+        covered by the content hash without anyone having to remember it.
+        Classrooms are sorted because the API does not guarantee their order.
+
+        Args:
+            event: Parsed event
+
+        Returns:
+            Dictionary describing the whole event
+        """
+        data = asdict(event)
+        data["classrooms"] = sorted(
+            data["classrooms"], key=lambda room: (room["title"], room["address"] or "")
+        )
+        return data
+
+    @staticmethod
     def parse_events(events_data: List[Dict[str, Any]]) -> Tuple[List[TimetableEvent], str]:
         """Parse list of events from API response and compute content hash.
+
+        The hash covers every field of every event, classrooms included, and
+        does not depend on the order the API returns them in: two responses
+        describing the same timetable always hash the same.
 
         Args:
             events_data: List of event dictionaries from API
@@ -145,33 +170,21 @@ class TimetableParser:
             >>> len(events)
             346
         """
-        events = []
-        hash_input = []
-
-        for event_data in events_data:
-            event = TimetableParser.parse_event(event_data)
-            events.append(event)
-
-            # Collect significant fields for hashing
-            hash_input.append(
-                {
-                    "title": event.title,
-                    "start": event.start.isoformat(),
-                    "end": event.end.isoformat(),
-                    "professor": event.professor,
-                    "module_code": event.module_code,
-                    "teaching_period": event.teaching_period,
-                    "is_remote": event.is_remote,
-                }
-            )
-
+        events = [TimetableParser.parse_event(event_data) for event_data in events_data]
         events.sort(key=lambda e: e.start)
 
-        # Compute stable hash
         content_hash = ""
-        if hash_input:
-            json_str = json.dumps(hash_input, sort_keys=True, ensure_ascii=False)
-            content_hash = sha256(json_str.encode("utf-8")).hexdigest()[:16]
+        if events:
+            fingerprints = sorted(
+                json.dumps(
+                    TimetableParser.event_fingerprint(event),
+                    sort_keys=True,
+                    ensure_ascii=False,
+                    default=str,
+                )
+                for event in events
+            )
+            content_hash = sha256("".join(fingerprints).encode("utf-8")).hexdigest()[:16]
 
         return events, content_hash
 
