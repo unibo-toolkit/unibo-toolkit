@@ -29,8 +29,8 @@ class TimetableScraper:
     Supports fetching timetables for single or multiple academic years,
     with configurable caching and date ranges.
 
-    The API rejects ranges longer than 45 days, so every request is split into
-    consecutive chunks that are fetched concurrently and merged.
+    The API rejects long date ranges, so every request is split into consecutive
+    chunks of at most MAX_API_RANGE_DAYS that are fetched concurrently and merged.
     """
 
     # API endpoint patterns (language-dependent)

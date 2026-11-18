@@ -6,10 +6,12 @@ import calendar
 from datetime import datetime, timedelta
 from typing import List, Optional, Tuple
 
-# Maximum allowed difference (in days) between `start` and `end` accepted by
-# the timetable API. Larger ranges are rejected with HTTP 503.
-# Both `start` and `end` are inclusive.
-MAX_API_RANGE_DAYS = 45
+# Maximum difference (in days) between `start` and `end` used per timetable API
+# request. Both `start` and `end` are inclusive.
+# The API currently accepts a difference of up to 43 days and rejects larger
+# ranges with HTTP 400 (it used to accept 45 and answer 503); the limit has
+# shrunk before, so a safety margin is kept.
+MAX_API_RANGE_DAYS = 30
 
 # Safety margin (in months) added on each side of the academic year when the
 # extended range is requested.
@@ -152,7 +154,7 @@ def split_date_range(
 
     Example:
         >>> split_date_range("2026-10-07", "2026-12-31")
-        [('2026-10-07', '2026-11-21'), ('2026-11-22', '2026-12-31')]
+        [('2026-10-07', '2026-11-06'), ('2026-11-07', '2026-12-07'), ('2026-12-08', '2026-12-31')]
     """
     if max_days < 0:
         raise ValueError("max_days must be non-negative")
